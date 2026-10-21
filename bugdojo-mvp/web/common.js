@@ -1,5 +1,6 @@
 // Identidad anónima y progreso: viven solo en el navegador de la persona.
 const CLAVE = "bugdojo-mvp";
+const FASES = ["aprendido", "armado", "resuelto"]; // Aprende → Arma → Escribe
 
 function nuevoUid() {
   if (crypto.randomUUID) return crypto.randomUUID();
@@ -24,13 +25,31 @@ function uid() {
   let { uid } = estado.leer();
   if (!uid) {
     uid = nuevoUid();
-    estado.guardar({ uid, resueltos: [], codigo: {} });
+    estado.guardar({ uid });
   }
   return uid;
 }
 
-function resueltos() {
-  return estado.leer().resueltos || [];
+// Progreso de un reto: { aprendido, armado, resuelto }
+function progreso(id) {
+  return (estado.leer().progreso || {})[id] || {};
+}
+
+// Marca una fase como completada y la reporta una sola vez.
+function marcar(id, fase) {
+  const todo = estado.leer().progreso || {};
+  if (todo[id] && todo[id][fase]) return;
+  estado.guardar({ progreso: { ...todo, [id]: { ...(todo[id] || {}), [fase]: true } } });
+  evento(fase, { reto: id });
+}
+
+function guardarEn(clave, id, valor) {
+  const todo = estado.leer()[clave] || {};
+  estado.guardar({ [clave]: { ...todo, [id]: valor } });
+}
+
+function leerDe(clave, id) {
+  return (estado.leer()[clave] || {})[id];
 }
 
 // Fire-and-forget: las métricas nunca bloquean la experiencia.

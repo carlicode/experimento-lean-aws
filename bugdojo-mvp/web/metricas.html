@@ -27,19 +27,19 @@
     .marca span { position: absolute; top: 0; left: 8px; white-space: nowrap; font-weight: 900; font-size: .85rem; color: var(--umbral); }
     .embudo { border: 2px solid var(--line); border-radius: 24px; padding: clamp(18px, 2.6vh, 30px); }
     .embudo h3 { margin-bottom: 14px; }
-    .fila { display: grid; grid-template-columns: minmax(170px, 24%) 1fr 90px; gap: 14px; align-items: center; margin: 10px 0; font-weight: 700; }
+    .fila { display: grid; grid-template-columns: minmax(170px, 24%) 1fr 120px; gap: 14px; align-items: center; margin: 10px 0; font-weight: 700; }
     .barras { position: relative; height: 22px; background: var(--soft); border-radius: 99px; overflow: hidden; }
     .barras div { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; transition: width .8s ease; }
     .fila b { text-align: right; font-variant-numeric: tabular-nums; }
     .leyenda { display: flex; gap: 18px; font-weight: 700; color: var(--muted); font-size: .9rem; margin-top: 8px; }
-    .leyenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+    .leyenda span > i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
   </style>
 </head>
 <body>
   <main class="dash">
     <div class="top">
       <div>
-        <p class="sub">🥋 BugDojo · MVP · etapa 2 del ciclo Lean</p>
+        <p class="sub"><i data-icono="code-xml"></i> BugDojo · MVP · etapa 2 del ciclo Lean</p>
         <h1 class="titulo grad">¿Lo usan y vuelven?</h1>
       </div>
       <span class="decision" id="decision">FALTAN DATOS</span>
@@ -47,18 +47,18 @@
 
     <section class="kpis">
       <article class="kpi">
-        <span class="nombre">Personas</span>
+        <span class="nombre"><i data-icono="users"></i> Personas</span>
         <span class="num" id="usuarios">0</span>
         <span class="det">entraron a la prueba gratuita</span>
       </article>
       <article class="kpi" id="kpi-act">
-        <span class="nombre">Activación</span>
+        <span class="nombre"><i data-icono="puzzle"></i> Activación</span>
         <span class="num" id="act">0<small>%</small></span>
-        <span class="det" id="act-det">resolvieron al menos 1 reto</span>
+        <span class="det" id="act-det">armaron al menos 1 programa</span>
         <div class="track"><div class="fill" id="act-fill"></div><div class="marca" id="act-marca"><span></span></div></div>
       </article>
       <article class="kpi" id="kpi-ret">
-        <span class="nombre">Retención</span>
+        <span class="nombre"><i data-icono="repeat"></i> Retención</span>
         <span class="num" id="ret">0<small>%</small></span>
         <span class="det" id="ret-det">volvieron otro día</span>
         <div class="track"><div class="fill" id="ret-fill"></div><div class="marca" id="ret-marca"><span></span></div></div>
@@ -66,17 +66,18 @@
     </section>
 
     <section class="embudo">
-      <h3>Embudo por reto</h3>
+      <h3><i data-icono="chart-column"></i> Embudo por reto</h3>
       <div id="embudo"></div>
-      <div class="leyenda"><span><i style="background:#ddd6fe"></i>Intentaron</span><span><i style="background:var(--dojo)"></i>Resolvieron</span><span id="feedback"></span></div>
+      <div class="leyenda"><span><i style="background:#ddd6fe"></i>Aprendieron</span><span><i style="background:#a78bfa"></i>Armaron</span><span><i style="background:var(--dojo)"></i>Escribieron</span><span id="feedback"></span></div>
     </section>
   </main>
   <footer class="firma"><span>@carli.code</span></footer>
 
+  <script src="ui.js"></script>
   <script src="retos.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
-    const DECISION = { persevera: "PERSEVERA 🎉", pivota: "PIVOTA 🔄", faltan_datos: "FALTAN DATOS" };
+    const DECISION = { persevera: "PERSEVERA", pivota: "PIVOTA", faltan_datos: "FALTAN DATOS" };
 
     function kpi(clave, valor, meta, veredicto, detalle) {
       const pct = Math.round(valor * 100);
@@ -97,22 +98,23 @@
       } catch { return; }
 
       $("usuarios").textContent = d.usuarios;
-      kpi("act", d.activacion, d.metas.activacion, d.veredictos.activacion, `${d.activados} resolvieron al menos 1 reto`);
+      kpi("act", d.activacion, d.metas.activacion, d.veredictos.activacion, `${d.activados} armaron al menos 1 programa`);
       kpi("ret", d.retencion, d.metas.retencion, d.veredictos.retencion, `${d.retenidos} volvieron otro día`);
       $("decision").className = "decision " + d.decision;
       $("decision").textContent = d.decision === "faltan_datos"
         ? `FALTAN DATOS (mín. ${d.metas.minimo})` : DECISION[d.decision];
 
-      const max = Math.max(1, ...Object.values(d.por_reto).map((x) => x.intentaron));
+      const max = Math.max(1, d.usuarios);
       $("embudo").innerHTML = RETOS.map((r) => {
         const x = d.por_reto[r.id];
         return `<div class="fila">
           <span>${r.id} · ${r.titulo}</span>
           <div class="barras">
-            <div style="width:${(x.intentaron / max) * 100}%;background:#ddd6fe"></div>
-            <div style="width:${(x.resolvieron / max) * 100}%;background:var(--dojo)"></div>
+            <div style="width:${(x.aprendieron / max) * 100}%;background:#ddd6fe"></div>
+            <div style="width:${(x.armaron / max) * 100}%;background:#a78bfa"></div>
+            <div style="width:${(x.escribieron / max) * 100}%;background:var(--dojo)"></div>
           </div>
-          <b>${x.resolvieron} / ${x.intentaron}</b>
+          <b>${x.aprendieron} · ${x.armaron} · ${x.escribieron}</b>
         </div>`;
       }).join("");
 

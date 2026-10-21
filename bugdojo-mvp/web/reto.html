@@ -7,34 +7,111 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="nav" style="max-width:760px">
-    <a class="logo dojo-c" href="index.html" style="text-decoration:none">🥋 BugDojo</a>
-    <span class="tag" id="cinta">MVP</span>
+  <header class="nav">
+    <a class="logo" href="index.html"><i data-icono="code-xml"></i>BugDojo</a>
+    <span class="tag" id="tag-reto"></span>
   </header>
 
-  <main class="wrap ancho screen">
-    <a class="volver" href="retos.html">← Todos los retos</a>
-    <p class="eyebrow" id="cinturon"></p>
-    <h2 id="titulo"></h2>
-    <p class="enunciado" id="enunciado"></p>
-    <div class="ejemplo" id="ejemplo"></div>
+  <main class="wrap screen">
+    <a class="volver" href="retos.html"><i data-icono="arrow-left"></i>Todos los retos</a>
 
-    <textarea id="editor" class="editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Editor de código"></textarea>
-    <button id="ejecutar" class="btn dojo-bg">Ejecutar tests</button>
-    <button id="reiniciar" class="link">Restaurar plantilla</button>
-
-    <p id="err" class="err" hidden style="margin-top:16px"></p>
-    <ul id="tests" class="tests"></ul>
-
-    <div id="exito" class="exito" hidden>
-      <span class="emoji-xl" style="font-size:3rem;margin-bottom:6px">🥋</span>
-      <h2>¡Reto superado!</h2>
-      <p id="exito-txt" class="hint" style="margin:0"></p>
-      <a id="siguiente" class="btn dojo-bg" style="text-align:center;text-decoration:none"></a>
+    <div class="cabecera">
+      <div>
+        <p class="eyebrow" id="cinturon"></p>
+        <h2 id="titulo"></h2>
+      </div>
+      <nav class="fases" aria-label="Fases del reto">
+        <button class="fase" data-fase="aprende"><i data-icono="book-open"></i>Aprende<span class="ok-slot"></span></button>
+        <button class="fase" data-fase="arma"><i data-icono="puzzle"></i>Arma<span class="ok-slot"></span></button>
+        <button class="fase" data-fase="escribe"><i data-icono="keyboard"></i>Escribe<span class="ok-slot"></span></button>
+      </nav>
     </div>
+
+    <!-- ============ 1 · APRENDE ============ -->
+    <section id="p-aprende" class="aprende" hidden>
+      <div class="enunciado">
+        <p class="panel-titulo"><i data-icono="target"></i>El reto</p>
+        <p class="txt-enunciado"></p>
+        <div class="ejemplo txt-ejemplo"></div>
+      </div>
+      <article class="concepto" id="concepto"></article>
+    </section>
+
+    <!-- ============ 2 · ARMA ============ -->
+    <section id="p-arma" class="taller" hidden>
+      <div class="panel guia">
+        <p class="panel-titulo"><i data-icono="list-checks"></i>Guía · <span id="g-paso"></span></p>
+        <div class="avance"><div id="g-barra"></div></div>
+        <p class="texto"><i data-icono="lightbulb"></i><span id="g-texto"></span></p>
+        <p class="aviso" id="g-aviso" hidden></p>
+        <div class="acciones">
+          <button class="btn ghost sm" id="pista"><i data-icono="lightbulb"></i>Pista</button>
+          <button class="btn ghost sm" id="limpiar"><i data-icono="rotate-ccw"></i>Reiniciar</button>
+        </div>
+      </div>
+
+      <div class="panel programa">
+        <p class="panel-titulo"><i data-icono="code-xml"></i>Tu programa</p>
+        <div class="lienzo">
+          <div class="bloque fijo" id="cabeza"></div>
+          <div class="zona" id="zona"></div>
+          <div class="bloque fijo"><i data-icono="braces" class="cat"></i>}</div>
+        </div>
+      </div>
+
+      <div class="panel paleta" id="panel-paleta">
+        <p class="panel-titulo"><i data-icono="blocks"></i>Bloques</p>
+        <p class="hint" id="paleta-hint">Toca un bloque para agregarlo a tu programa. Ojo: algunos son trampa.</p>
+        <div class="bloques" id="paleta"></div>
+        <div class="leyenda-tipos" id="leyenda"></div>
+      </div>
+
+      <div class="resultado">
+        <button class="btn dojo block" id="comprobar"><i data-icono="play"></i>Comprobar programa</button>
+        <p class="err" id="a-err" hidden></p>
+        <ul class="tests" id="a-tests"></ul>
+        <div class="exito" id="a-exito" hidden>
+          <i data-icono="trophy" class="i-xl"></i>
+          <h2>¡Programa armado!</h2>
+          <p class="hint">Ya entiendes cómo funciona. ¿Te animas a escribirlo sin bloques?</p>
+          <div class="acciones">
+            <button class="btn dojo" data-ir="escribe"><i data-icono="keyboard"></i>Escríbelo tú</button>
+            <a class="btn ghost siguiente"></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 3 · ESCRIBE ============ -->
+    <section id="p-escribe" class="escribe" hidden>
+      <div>
+        <textarea id="editor" class="editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Editor de código"></textarea>
+        <div class="acciones" style="margin-top:12px">
+          <button class="btn dojo" id="ejecutar"><i data-icono="play"></i>Ejecutar tests</button>
+          <button class="btn ghost" id="usar-armado"><i data-icono="puzzle"></i>Partir de lo que armé</button>
+          <button class="btn ghost" id="restaurar"><i data-icono="undo-2"></i>Plantilla vacía</button>
+        </div>
+      </div>
+      <div>
+        <div class="enunciado">
+          <p class="panel-titulo"><i data-icono="target"></i>El reto</p>
+          <p class="txt-enunciado"></p>
+          <div class="ejemplo txt-ejemplo"></div>
+        </div>
+        <p class="err" id="e-err" hidden></p>
+        <ul class="tests" id="e-tests"></ul>
+        <div class="exito" id="e-exito" hidden>
+          <i data-icono="trophy" class="i-xl"></i>
+          <h2>¡Lo escribiste tú!</h2>
+          <p class="hint">Sin bloques y con todos los tests en verde.</p>
+          <div class="acciones"><a class="btn dojo siguiente"></a></div>
+        </div>
+      </div>
+    </section>
   </main>
   <footer class="firma"><span>@carli.code</span></footer>
 
+  <script src="ui.js"></script>
   <script src="common.js"></script>
   <script src="retos.js"></script>
   <script>
@@ -43,23 +120,297 @@
     const reto = RETOS.find((r) => r.id === id);
     if (!reto) location.replace("retos.html");
 
-    $("cinturon").textContent = `Cinturón ${reto.cinturon}`;
-    $("cinta").textContent = `Reto ${reto.id} de ${RETOS.length}`;
-    $("titulo").textContent = reto.titulo;
-    $("enunciado").textContent = reto.enunciado;
-    $("ejemplo").textContent = reto.ejemplo;
+    // ---------- Cabecera ----------
     document.title = `BugDojo · ${reto.titulo}`;
+    $("tag-reto").innerHTML = `<span class="cinta" style="width:22px;height:8px;background:${reto.color}"></span>Reto ${reto.id} de ${RETOS.length}`;
+    $("cinturon").textContent = `Cinturón ${reto.cinturon}`;
+    $("titulo").textContent = reto.titulo;
+    document.querySelectorAll(".txt-enunciado").forEach((el) => (el.textContent = reto.enunciado));
+    document.querySelectorAll(".txt-ejemplo").forEach((el) => (el.textContent = reto.ejemplo));
 
-    const guardado = (estado.leer().codigo || {})[reto.id];
-    $("editor").value = guardado || reto.plantilla;
-
-    function guardarCodigo() {
-      const codigo = { ...(estado.leer().codigo || {}), [reto.id]: $("editor").value };
-      estado.guardar({ codigo });
+    function siguienteReto() {
+      return RETOS.find((r) => r.id !== reto.id && !progreso(r.id).armado);
     }
-    $("editor").addEventListener("input", guardarCodigo);
+    function pintarSiguiente() {
+      const sig = siguienteReto();
+      document.querySelectorAll(".siguiente").forEach((a) => {
+        a.href = sig ? `reto.html?id=${sig.id}` : "retos.html";
+        a.innerHTML = sig ? `Siguiente: cinturón ${sig.cinturon} ${icono("arrow-right")}` : `Ver mis retos ${icono("trophy")}`;
+      });
+    }
 
-    // Tab escribe 2 espacios en vez de saltar de campo
+    // ---------- Fases ----------
+    const FASE_DE = { aprende: "aprendido", arma: "armado", escribe: "resuelto" };
+    function pintarChecks() {
+      const p = progreso(reto.id);
+      document.querySelectorAll(".fase").forEach((b) => {
+        b.querySelector(".ok-slot").innerHTML = p[FASE_DE[b.dataset.fase]] ? icono("circle-check", "ok") : "";
+      });
+    }
+    function mostrarFase(f) {
+      ["aprende", "arma", "escribe"].forEach((x) => ($("p-" + x).hidden = x !== f));
+      document.querySelectorAll(".fase").forEach((b) => b.classList.toggle("activa", b.dataset.fase === f));
+      history.replaceState(null, "", `#${f}`);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    document.querySelectorAll(".fase").forEach((b) => b.addEventListener("click", () => mostrarFase(b.dataset.fase)));
+    document.querySelectorAll("[data-ir]").forEach((b) => b.addEventListener("click", () => mostrarFase(b.dataset.ir)));
+
+    // ================= 1 · APRENDE =================
+    let ci = 0;
+    function pintarConcepto() {
+      const c = reto.conceptos[ci];
+      const ultimo = ci === reto.conceptos.length - 1;
+      $("concepto").innerHTML = `
+        <div class="paso">${icono("book-open")}Concepto ${ci + 1} de ${reto.conceptos.length}</div>
+        <h2>${escapar(c.titulo)}</h2>
+        <p>${escapar(c.texto)}</p>
+        <pre class="codigo">${escapar(c.codigo)}</pre>
+        <div class="quiz">
+          <p>${escapar(c.pregunta)}</p>
+          <div class="opciones">${c.opciones.map((o, i) => `<button class="opcion" data-i="${i}"><span>${escapar(o)}</span></button>`).join("")}</div>
+          <div class="explicacion" hidden></div>
+        </div>
+        <div class="acciones" style="margin-top:18px">
+          <button class="btn dojo" id="sig-concepto" disabled>${ultimo ? `¡Listo! Ir a armar ${icono("puzzle")}` : `Siguiente concepto ${icono("arrow-right")}`}</button>
+          ${ultimo ? "" : `<button class="btn ghost" id="saltar">Ya lo sé, ir a armar</button>`}
+        </div>
+        <div class="puntos">${reto.conceptos.map((_, i) => `<i class="${i <= ci ? "on" : ""}"></i>`).join("")}</div>`;
+
+      $("concepto").querySelectorAll(".opcion").forEach((b) => b.addEventListener("click", () => {
+        const bien = Number(b.dataset.i) === c.correcta;
+        const exp = $("concepto").querySelector(".explicacion");
+        b.classList.add(bien ? "bien" : "mal");
+        b.insertAdjacentHTML("beforeend", icono(bien ? "check" : "x"));
+        b.disabled = true;
+        exp.hidden = false;
+        exp.innerHTML = bien
+          ? `${icono("circle-check")}<span><b>¡Correcto!</b> ${escapar(c.explicacion)}</span>`
+          : `${icono("info")}<span>Casi. Vuelve a leer el ejemplo e intenta otra vez.</span>`;
+        if (bien) {
+          $("concepto").querySelectorAll(".opcion").forEach((o) => (o.disabled = true));
+          $("sig-concepto").disabled = false;
+        }
+      }));
+
+      $("sig-concepto").addEventListener("click", () => {
+        if (ultimo) {
+          marcar(reto.id, "aprendido");
+          pintarChecks();
+          mostrarFase("arma");
+        } else {
+          ci += 1;
+          pintarConcepto();
+        }
+      });
+      if (!ultimo) $("saltar").addEventListener("click", () => mostrarFase("arma"));
+    }
+    pintarConcepto();
+
+    // ================= 2 · ARMA =================
+    const piezas = new Map();
+    reto.bloques.forEach((b, i) => piezas.set("s" + i, b));
+    reto.distractores.forEach((b, i) => piezas.set("d" + i, b));
+
+    // Orden de la paleta mezclado, pero estable para cada reto
+    function mezclar(lista, semilla) {
+      const a = [...lista];
+      let x = semilla * 9301 + 49297;
+      for (let i = a.length - 1; i > 0; i--) {
+        x = (x * 9301 + 49297) % 233280;
+        const j = Math.floor((x / 233280) * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    const ordenPaleta = mezclar([...piezas.keys()], Number(reto.id) * 7);
+    let orden = (leerDe("armado", reto.id) || []).filter((k) => piezas.has(k));
+
+    $("cabeza").innerHTML = `${icono("braces", "cat")}function ${reto.funcion}(${reto.parametros}) {`;
+    $("leyenda").innerHTML = Object.entries(TIPOS)
+      .filter(([t]) => [...piezas.values()].some((p) => p.tipo === t))
+      .map(([t, info]) => `<span><i style="background:var(--b-${t})"></i>${info.nombre}</span>`).join("");
+    if (matchMedia("(pointer: fine)").matches) {
+      $("paleta-hint").textContent = "Tócalo o arrástralo a tu programa. Ojo: algunos son trampa.";
+    }
+
+    function htmlBloque(k, enPrograma) {
+      const p = piezas.get(k);
+      const sangria = enPrograma ? `style="margin-left:${(p.nivel - 1) * 24}px"` : "";
+      return `<button class="bloque" data-tipo="${p.tipo}" data-k="${k}" draggable="true" ${sangria}
+                title="${enPrograma ? "Tocar para quitar" : "Tocar para agregar"}">
+        ${icono(TIPOS[p.tipo].icono, "cat")}<span>${escapar(p.codigo)}</span>
+        ${enPrograma ? icono("x", "quitar") : icono("grip-vertical", "grip")}
+      </button>`;
+    }
+
+    function pintarTaller() {
+      $("zona").innerHTML = orden.length
+        ? orden.map((k) => htmlBloque(k, true)).join("")
+        : `<div class="vacio">${icono("blocks")}Tu programa está vacío. Agrega bloques desde la paleta.</div>`;
+      $("paleta").innerHTML = ordenPaleta.filter((k) => !orden.includes(k)).map((k) => htmlBloque(k, false)).join("")
+        || `<p class="hint">No quedan bloques.</p>`;
+
+      const total = reto.bloques.length;
+      const paso = Math.min(orden.length, total);
+      $("g-paso").textContent = `${paso} de ${total} bloques`;
+      $("g-barra").style.width = (paso / total) * 100 + "%";
+      $("g-texto").textContent = orden.length < total
+        ? `Paso ${orden.length + 1}: ${reto.bloques[orden.length].guia}`
+        : "Ya tienes todos los bloques. Presiona Comprobar programa.";
+      guardarEn("armado", reto.id, orden);
+    }
+
+    function cambio() {
+      $("g-aviso").hidden = true;
+      $("a-err").hidden = true;
+      $("a-tests").innerHTML = "";
+      $("a-exito").hidden = true;
+      pintarTaller();
+    }
+
+    // Tocar: paleta → programa, programa → paleta
+    $("paleta").addEventListener("click", (e) => {
+      const b = e.target.closest(".bloque");
+      if (!b) return;
+      orden.push(b.dataset.k);
+      cambio();
+    });
+    $("zona").addEventListener("click", (e) => {
+      const b = e.target.closest(".bloque");
+      if (!b) return;
+      orden = orden.filter((k) => k !== b.dataset.k);
+      cambio();
+    });
+
+    // Arrastrar (compu): reordenar dentro del programa o devolver a la paleta
+    let arrastrado = null;
+    const linea = document.createElement("div");
+    linea.className = "linea-drop";
+
+    document.addEventListener("dragstart", (e) => {
+      const b = e.target.closest?.(".bloque[data-k]");
+      if (!b) return;
+      arrastrado = b.dataset.k;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", arrastrado);
+      requestAnimationFrame(() => b.classList.add("arrastrando"));
+    });
+    document.addEventListener("dragend", () => {
+      arrastrado = null;
+      linea.remove();
+      $("zona").classList.remove("sobre");
+      document.querySelectorAll(".arrastrando").forEach((b) => b.classList.remove("arrastrando"));
+    });
+
+    function indiceDrop(y) {
+      const hijos = [...$("zona").querySelectorAll(".bloque")];
+      const i = hijos.findIndex((h) => y < h.getBoundingClientRect().top + h.offsetHeight / 2);
+      return i === -1 ? hijos.length : i;
+    }
+    $("zona").addEventListener("dragover", (e) => {
+      if (!arrastrado) return;
+      e.preventDefault();
+      $("zona").classList.add("sobre");
+      const hijos = [...$("zona").querySelectorAll(".bloque")];
+      const i = indiceDrop(e.clientY);
+      if (hijos[i]) $("zona").insertBefore(linea, hijos[i]);
+      else $("zona").appendChild(linea);
+    });
+    $("zona").addEventListener("dragleave", (e) => {
+      if (!$("zona").contains(e.relatedTarget)) { $("zona").classList.remove("sobre"); linea.remove(); }
+    });
+    $("zona").addEventListener("drop", (e) => {
+      e.preventDefault();
+      if (!arrastrado) return;
+      const k = arrastrado;
+      let i = indiceDrop(e.clientY);
+      const previo = orden.indexOf(k);
+      if (previo !== -1) {
+        orden.splice(previo, 1);
+        if (previo < i) i -= 1;
+      }
+      orden.splice(i, 0, k);
+      cambio();
+    });
+    $("panel-paleta").addEventListener("dragover", (e) => { if (arrastrado && orden.includes(arrastrado)) e.preventDefault(); });
+    $("panel-paleta").addEventListener("drop", (e) => {
+      e.preventDefault();
+      if (arrastrado && orden.includes(arrastrado)) {
+        orden = orden.filter((k) => k !== arrastrado);
+        cambio();
+      }
+    });
+
+    // Pista: señala el primer bloque equivocado o el siguiente correcto
+    $("pista").addEventListener("click", () => {
+      document.querySelectorAll(".pista, .equivocado").forEach((b) => b.classList.remove("pista", "equivocado"));
+      const aviso = $("g-aviso");
+      aviso.style.color = "";
+      const mal = orden.findIndex((k, i) => piezas.get(k).codigo !== reto.bloques[i]?.codigo);
+      if (mal !== -1) {
+        $("zona").querySelectorAll(".bloque")[mal].classList.add("equivocado");
+        aviso.textContent = `El bloque ${mal + 1} no va ahí. Tócalo para devolverlo a la paleta.`;
+        aviso.hidden = false;
+        return;
+      }
+      aviso.hidden = true;
+      if (orden.length >= reto.bloques.length) {
+        aviso.textContent = "Todo está en orden: presiona Comprobar programa.";
+        aviso.style.color = "var(--ok)";
+        aviso.hidden = false;
+        return;
+      }
+      const esperado = reto.bloques[orden.length].codigo;
+      const candidato = [...$("paleta").querySelectorAll(".bloque")].find((b) => piezas.get(b.dataset.k).codigo === esperado);
+      if (candidato) {
+        candidato.classList.add("pista");
+        candidato.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+
+    $("limpiar").addEventListener("click", () => { orden = []; cambio(); });
+
+    $("comprobar").addEventListener("click", async () => {
+      $("a-err").hidden = true;
+      $("a-exito").hidden = true;
+      if (!orden.length) {
+        $("a-err").textContent = "Primero agrega bloques a tu programa.";
+        $("a-err").hidden = false;
+        return;
+      }
+      $("comprobar").disabled = true;
+      const r = await correrTests(armarCodigo(reto, orden.map((k) => piezas.get(k))), reto);
+      $("comprobar").disabled = false;
+      $("a-tests").innerHTML = "";
+      if (r.error) {
+        $("a-err").textContent = r.error.startsWith("Error de sintaxis")
+          ? "Tu programa aún no está completo: revisa que cada { tenga su } y que no falten pasos."
+          : r.error;
+        $("a-err").hidden = false;
+        return;
+      }
+      pintarTests($("a-tests"), reto, r.resultados);
+      if (r.resultados.every((t) => t.ok)) {
+        marcar(reto.id, "armado");
+        pintarChecks();
+        pintarSiguiente();
+        $("a-exito").hidden = false;
+        $("a-exito").scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        $("a-err").textContent = orden.length < reto.bloques.length
+          ? "Algunos tests fallan. Te faltan bloques: sigue la guía o pide una pista."
+          : "Algunos tests fallan. ¿Hay algún bloque trampa? Pide una pista.";
+        $("a-err").hidden = false;
+      }
+    });
+
+    pintarTaller();
+
+    // ================= 3 · ESCRIBE =================
+    $("editor").value = leerDe("codigo", reto.id) || plantilla(reto);
+    const guardarCodigo = () => guardarEn("codigo", reto.id, $("editor").value);
+    $("editor").addEventListener("input", guardarCodigo);
     $("editor").addEventListener("keydown", (e) => {
       if (e.key !== "Tab") return;
       e.preventDefault();
@@ -68,71 +419,47 @@
       el.selectionStart = el.selectionEnd = i + 2;
       guardarCodigo();
     });
-
-    $("reiniciar").addEventListener("click", () => {
-      $("editor").value = reto.plantilla;
+    $("restaurar").addEventListener("click", () => { $("editor").value = plantilla(reto); guardarCodigo(); });
+    $("usar-armado").addEventListener("click", () => {
+      if (!orden.length) {
+        $("e-err").textContent = "Aún no armaste bloques en este reto.";
+        $("e-err").hidden = false;
+        return;
+      }
+      $("editor").value = armarCodigo(reto, orden.map((k) => piezas.get(k)));
       guardarCodigo();
     });
 
-    function correr(codigo) {
-      return new Promise((resolve) => {
-        const w = new Worker("worker.js");
-        const corte = setTimeout(() => {
-          w.terminate();
-          resolve({ error: "Tu código tardó más de 2 segundos. ¿Hay un bucle infinito?" });
-        }, 2000);
-        w.onmessage = (e) => { clearTimeout(corte); w.terminate(); resolve(e.data); };
-        w.onerror = (e) => { clearTimeout(corte); w.terminate(); resolve({ error: e.message }); };
-        w.postMessage({ codigo, funcion: reto.funcion, tests: reto.tests });
-      });
-    }
-
     $("ejecutar").addEventListener("click", async () => {
+      $("e-err").hidden = true;
+      $("e-exito").hidden = true;
+      $("e-tests").innerHTML = "";
       $("ejecutar").disabled = true;
-      $("err").hidden = true;
-      $("exito").hidden = true;
-      $("tests").innerHTML = "";
       evento("intento", { reto: reto.id });
-
-      const r = await correr($("editor").value);
+      const r = await correrTests($("editor").value, reto);
       $("ejecutar").disabled = false;
       if (r.error) {
-        $("err").textContent = r.error;
-        $("err").hidden = false;
+        $("e-err").textContent = r.error;
+        $("e-err").hidden = false;
         return;
       }
-
-      $("tests").innerHTML = r.resultados.map((t) => `
-        <li class="${t.ok ? "ok" : "mal"}">
-          <b>${t.ok ? "✓" : "✗"}</b> ${reto.funcion}(${escapar(t.entrada)})<br>
-          esperado: ${escapar(t.esperado)}${t.ok ? "" : `<br>obtenido: ${escapar(t.obtenido)}`}
-        </li>`).join("");
-
-      if (r.resultados.every((t) => t.ok)) celebrar();
+      pintarTests($("e-tests"), reto, r.resultados);
+      if (r.resultados.every((t) => t.ok)) {
+        marcar(reto.id, "resuelto");
+        pintarChecks();
+        pintarSiguiente();
+        $("e-exito").hidden = false;
+        $("e-exito").scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     });
 
-    function celebrar() {
-      const hechos = resueltos();
-      if (!hechos.includes(reto.id)) {
-        estado.guardar({ resueltos: [...hechos, reto.id] });
-        evento("resuelto", { reto: reto.id });
-      }
-      const sig = RETOS.find((r) => !resueltos().includes(r.id));
-      $("exito-txt").textContent = `${resueltos().length} de ${RETOS.length} retos resueltos.`;
-      if (sig) {
-        $("siguiente").textContent = `Siguiente: cinturón ${sig.cinturon} →`;
-        $("siguiente").href = `reto.html?id=${sig.id}`;
-      } else {
-        $("siguiente").textContent = "¡Cinturón negro! Ver mis retos";
-        $("siguiente").href = "retos.html";
-      }
-      $("exito").hidden = false;
-      $("exito").scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-
-    function escapar(t) {
-      return String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    }
+    // ---------- Inicio: hash o primera fase pendiente ----------
+    pintarChecks();
+    pintarSiguiente();
+    const p = progreso(reto.id);
+    const desdeHash = location.hash.slice(1);
+    mostrarFase(["aprende", "arma", "escribe"].includes(desdeHash) ? desdeHash
+      : !p.aprendido ? "aprende" : !p.armado ? "arma" : "escribe");
   </script>
 </body>
 </html>

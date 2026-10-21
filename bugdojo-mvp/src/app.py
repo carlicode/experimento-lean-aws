@@ -3,7 +3,8 @@
 No hay cuentas, correos ni pagos. Cada navegador tiene un uid aleatorio.
 
 Rutas (HTTP API, detrás de CloudFront en /api/*):
-  POST /api/evento    {uid, tipo: "visita"|"intento"|"resuelto"|"feedback", reto?, valor?}
+  POST /api/evento    {uid, tipo, reto?, valor?}
+                      tipo: visita | aprendido | armado | intento | resuelto | feedback
   GET  /api/metricas  -> solo totales agregados
 """
 import json
@@ -18,9 +19,10 @@ tabla = boto3.resource("dynamodb").Table(os.environ["TABLA"])
 UID_RE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 RETOS = {"1", "2", "3", "4", "5"}
 BOLIVIA = timezone(timedelta(hours=-4))
+FASES = ("aprendido", "armado", "resuelto")  # Aprende → Arma → Escribe
 
 # Hipótesis del MVP (se definen antes de ver datos)
-META_ACTIVACION = 0.40   # resuelven al menos 1 reto
+META_ACTIVACION = 0.40   # arman al menos 1 programa
 META_RETENCION = 0.20    # vuelven otro día
 MINIMO_USUARIOS = 10
 
@@ -46,12 +48,13 @@ def registrar_evento(cuerpo):
 
     if tipo == "visita":
         tabla.put_item(Item={"uid": uid, "sk": f"visita#{hoy()}"})
-    elif tipo in ("intento", "resuelto"):
+    elif tipo in FASES or tipo == "intento":
         if reto not in RETOS:
             return respuesta(400, {"error": "reto_invalido"})
-        expr = "ADD #n :uno" if tipo == "intento" else "SET #r = :si"
-        nombres = {"#n": "intentos"} if tipo == "intento" else {"#r": "resuelto"}
-        valores = {":uno": 1} if tipo == "intento" else {":si": True}
+        if tipo == "intento":
+            expr, nombres, valores = "ADD #n :uno", {"#n": "intentos"}, {":uno": 1}
+        else:
+            expr, nombres, valores = "SET #f = :si", {"#f": tipo}, {":si": True}
         tabla.update_item(Key={"uid": uid, "sk": f"reto#{reto}"}, UpdateExpression=expr,
                           ExpressionAttributeNames=nombres, ExpressionAttributeValues=valores)
     elif tipo == "feedback":
@@ -80,7 +83,7 @@ def metricas():
         kwargs["ExclusiveStartKey"] = pagina["LastEvaluatedKey"]
 
     dias, activados, feedback = {}, set(), {"si": 0, "no": 0}
-    por_reto = {r: {"intentaron": 0, "resolvieron": 0} for r in sorted(RETOS)}
+    por_reto = {r: {"aprendieron": 0, "armaron": 0, "escribieron": 0} for r in sorted(RETOS)}
     for i in items:
         uid, sk = i["uid"], i["sk"]
         dias.setdefault(uid, set())
@@ -89,10 +92,10 @@ def metricas():
         elif sk.startswith("reto#"):
             r = sk.split("#", 1)[1]
             if r in por_reto:
-                if i.get("intentos") or i.get("resuelto"):
-                    por_reto[r]["intentaron"] += 1
-                if i.get("resuelto"):
-                    por_reto[r]["resolvieron"] += 1
+                por_reto[r]["aprendieron"] += 1 if i.get("aprendido") else 0
+                por_reto[r]["armaron"] += 1 if i.get("armado") else 0
+                por_reto[r]["escribieron"] += 1 if i.get("resuelto") else 0
+                if i.get("armado") or i.get("resuelto"):
                     activados.add(uid)
         elif sk == "feedback" and i.get("valor") in feedback:
             feedback[i["valor"]] += 1

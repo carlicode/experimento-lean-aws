@@ -9,18 +9,30 @@ Siguiente vuelta del ciclo **Construir → Medir → Aprender**, después del ex
 
 **No hay venta:** sin precios, sin correos, sin cuentas y sin pagos. Solo una prueba gratuita con 5 retos reales de JavaScript (del cinturón blanco al negro) y medición de uso **anónimo**.
 
+## Cómo se aprende: 3 fases por reto
+
+Nadie empieza frente a una pantalla en blanco:
+
+| Fase | Qué hace la persona |
+|---|---|
+| **1. Aprende** | 3 tarjetas de conceptos con ejemplo de código y una pregunta para comprobar que se entendió. |
+| **2. Arma** | Ordena bloques de código **estilo Scratch** (colores por tipo: variable, bucle, condición, acción, devolver, cierre). Hay bloques trampa, una **guía paso a paso** y botón de **pista**. Se toca para agregar o quitar; en la compu también se arrastra. |
+| **3. Escribe** | Opcional: escribe la función en el editor, sin bloques (puede partir de lo que armó). |
+
+El diseño es mobile first, con layout de 3 columnas en pantallas grandes (paleta · programa · guía) para proyectar. Los iconos son de [Lucide](https://lucide.dev) (ISC), incluidos en `web/icons/`.
+
 ## Hipótesis (definidas antes de ver datos)
 
 | Métrica | Definición | Meta |
 |---|---|---|
-| **Activación** | % de personas que resuelven al menos 1 reto | **≥ 40 %** |
+| **Activación** | % de personas que **arman** al menos 1 programa | **≥ 40 %** |
 | **Retención** | % de personas que vuelven otro día | **≥ 20 %** |
 
 - Si se cumplen las dos: **PERSEVERA**.
 - Si falla alguna: **PIVOTA**.
 - Con menos de 10 personas: **FALTAN DATOS**.
 
-Como señal cualitativa, después de resolver un reto se pregunta *"¿Volverías mañana por un reto nuevo?"*.
+Como señal cualitativa, después de armar un programa se pregunta *"¿Volverías mañana por un reto nuevo?"*. El embudo por reto muestra cuántos **aprendieron**, **armaron** y **escribieron**.
 
 ## Si BugDojo muere en el experimento en vivo
 
@@ -35,8 +47,8 @@ Navegador ─► CloudFront ─┬─► S3        (landing, retos, editor, mét
 
 - **El código de la persona corre en SU navegador**, en un Web Worker con un corte a los 2 segundos (para bucles infinitos). El servidor nunca ejecuta código ajeno.
 - **Identidad anónima:** un `uid` aleatorio en `localStorage`. El progreso y el código también se guardan solo en el navegador.
-- **Al servidor llegan solo eventos:** `visita` (deduplicada por día, hora de Bolivia), `intento`, `resuelto` y `feedback`.
-- **`/metricas.html`** muestra solo totales: activación, retención, embudo por reto y feedback.
+- **Al servidor llegan solo eventos:** `visita` (deduplicada por día, hora de Bolivia), `aprendido`, `armado`, `intento`, `resuelto` y `feedback`.
+- **`/metricas.html`** muestra solo totales: activación, retención, embudo por fase y reto, y feedback.
 
 ### Retos
 
@@ -48,7 +60,7 @@ Navegador ─► CloudFront ─┬─► S3        (landing, retos, editor, mét
 | 4 | Verde | FizzBuzz | `fizzBuzz(n)` |
 | 5 | Negro | Paréntesis balanceados | `estaBalanceado(texto)` |
 
-Se editan en `web/retos.js`.
+Conceptos, bloques, guía, trampas y tests se editan en `web/retos.js`.
 
 ## Uso
 

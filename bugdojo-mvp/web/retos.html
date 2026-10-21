@@ -8,43 +8,50 @@
 </head>
 <body>
   <header class="nav">
-    <a class="logo dojo-c" href="index.html" style="text-decoration:none">🥋 BugDojo</a>
-    <span class="tag">MVP</span>
+    <a class="logo" href="index.html"><i data-icono="code-xml"></i>BugDojo</a>
+    <span class="tag" id="avance"><i data-icono="trophy"></i></span>
   </header>
 
   <main class="wrap screen">
-    <p class="avance" id="avance"></p>
+    <p class="eyebrow">Prueba gratuita · 5 retos</p>
     <h1>Tu camino al <span class="dojo-grad">cinturón negro</span></h1>
-    <p class="lead">Ve en orden o elige el que quieras.</p>
+    <p class="lead">Cada reto tiene 3 fases: <b>Aprende</b>, <b>Arma</b> y <b>Escribe</b>. Ve en orden o elige el que quieras.</p>
 
-    <div id="lista" class="cinturones"></div>
+    <div id="lista" class="lista"></div>
 
-    <div id="pregunta" class="pregunta" hidden>
+    <div id="pregunta" class="pregunta-valor" hidden>
       <p>¿Volverías mañana por un reto nuevo?</p>
-      <div class="fila">
-        <button class="btn dojo-bg" data-v="si">Sí</button>
-        <button class="btn ghost" data-v="no">No</button>
+      <div class="acciones">
+        <button class="btn dojo" data-v="si"><i data-icono="thumbs-up"></i>Sí</button>
+        <button class="btn ghost" data-v="no"><i data-icono="thumbs-down"></i>No</button>
       </div>
     </div>
     <p id="gracias" class="hint" hidden>¡Gracias! Tu respuesta nos ayuda a decidir si BugDojo sigue.</p>
   </main>
   <footer class="firma"><span>@carli.code</span></footer>
 
+  <script src="ui.js"></script>
   <script src="common.js"></script>
   <script src="retos.js"></script>
   <script>
-    const hechos = resueltos();
-    document.getElementById("avance").textContent = `${hechos.length} de ${RETOS.length} resueltos`;
-    document.getElementById("lista").innerHTML = RETOS.map((r) => `
-      <a class="cinturon" href="reto.html?id=${r.id}">
-        <span class="cinta" style="background:${r.color}"></span>
-        <span class="info"><small>Cinturón ${r.cinturon}</small><b>${r.titulo}</b></span>
-        <span class="estado">${hechos.includes(r.id) ? "✅" : "→"}</span>
-      </a>`).join("");
+    const ICONOS_FASE = { aprendido: "book-open", armado: "puzzle", resuelto: "keyboard" };
+    const armados = RETOS.filter((r) => progreso(r.id).armado).length;
+    document.getElementById("avance").insertAdjacentHTML("beforeend", `${armados} de ${RETOS.length}`);
 
-    // Pregunta de valor: solo después de resolver al menos un reto, una sola vez.
+    document.getElementById("lista").innerHTML = RETOS.map((r) => {
+      const p = progreso(r.id);
+      const fases = FASES.map((f) => `<span class="${p[f] ? "hecha" : ""}" title="${f}">${icono(p[f] && f === "resuelto" ? "circle-check" : ICONOS_FASE[f])}</span>`).join("");
+      return `
+        <a class="card-reto" href="reto.html?id=${r.id}">
+          <span class="cinta" style="background:${r.color}"></span>
+          <span class="info"><small>Cinturón ${r.cinturon}</small><b>${r.titulo}</b></span>
+          <span class="fases-mini" aria-label="Fases completadas">${fases}</span>
+        </a>`;
+    }).join("");
+
+    // Pregunta de valor: solo después de armar al menos un programa, una sola vez.
     const s = estado.leer();
-    if (hechos.length > 0 && !s.feedback) {
+    if (armados > 0 && !s.feedback) {
       const caja = document.getElementById("pregunta");
       caja.hidden = false;
       caja.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {

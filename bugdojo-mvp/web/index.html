@@ -3,45 +3,60 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>BugDojo · Prueba gratuita</title>
+  <title>BugDojo · Aprende lógica de programación paso a paso</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="nav">
-    <span class="logo dojo-c">🥋 BugDojo</span>
-    <span class="tag">MVP · Prueba gratuita</span>
+    <a class="logo" href="index.html"><i data-icono="code-xml"></i>BugDojo</a>
+    <span class="tag"><i data-icono="sparkles"></i>Prueba gratuita</span>
   </header>
 
   <main class="wrap screen">
-    <p class="eyebrow dojo-c">Para quienes se traban resolviendo código</p>
-    <h1>Entrena tu lógica <span class="dojo-grad">como en un dojo.</span></h1>
-    <p class="lead">5 retos cortos de programación en JavaScript, del cinturón blanco al negro. Escribes una función y los tests te dicen al instante si tu lógica funciona.</p>
+    <section class="hero">
+      <div>
+        <p class="eyebrow dojo-c">Para quienes se traban resolviendo código</p>
+        <h1>Aprende lógica <span class="dojo-grad">paso a paso.</span></h1>
+        <p class="lead">No empiezas frente a una pantalla en blanco: primero entiendes el concepto, luego armas el código con bloques y al final lo escribes tú.</p>
 
-    <a class="btn dojo-bg" href="retos.html" style="text-align:center;text-decoration:none">Empezar mi primer reto</a>
-    <p class="hint" style="text-align:center">Sin registro, sin correo y sin pagos.</p>
+        <ol class="metodo">
+          <li>
+            <span class="num"><i data-icono="book-open" class="i-lg"></i></span>
+            <div><h3>1 · Aprende</h3><p>Conceptos cortos, con ejemplos y una pregunta para comprobar que lo entendiste.</p></div>
+          </li>
+          <li>
+            <span class="num"><i data-icono="puzzle" class="i-lg"></i></span>
+            <div><h3>2 · Arma</h3><p>Ordena bloques de código como en Scratch, con una guía que te acompaña en cada paso.</p></div>
+          </li>
+          <li>
+            <span class="num"><i data-icono="keyboard" class="i-lg"></i></span>
+            <div><h3>3 · Escribe</h3><p>Cuando estés listo, escríbelo tú. Los tests te dicen al instante si funciona.</p></div>
+          </li>
+        </ol>
 
-    <ul class="features" style="margin-top:28px">
-      <li>
-        <span class="ico">⏱️</span>
-        <h3>Retos de 10 minutos</h3>
-        <p>Pensados para resolver entre clases, en la compu o en el celular.</p>
-      </li>
-      <li>
-        <span class="ico">✅</span>
-        <h3>Tests al instante</h3>
-        <p>Ves qué casos pasan y cuáles no, con lo que esperabas y lo que obtuviste.</p>
-      </li>
-      <li>
-        <span class="ico">🥋</span>
-        <h3>Sube de cinturón</h3>
-        <p>Cada reto resuelto te acerca al cinturón negro.</p>
-      </li>
-    </ul>
+        <a class="btn dojo" href="retos.html">Empezar gratis <i data-icono="arrow-right"></i></a>
+        <p class="hint">5 retos, del cinturón blanco al negro. Sin registro, sin correo y sin pagos.</p>
+      </div>
 
-    <p class="nota">BugDojo es un MVP en validación (charla Startup Lean en AWS). Solo medimos uso anónimo: qué retos se intentan, cuáles se resuelven y si vuelves otro día.</p>
+      <div class="vista" aria-hidden="true">
+        <p class="panel-titulo"><i data-icono="puzzle"></i>Así se arma un programa</p>
+        <div class="bloques">
+          <div class="bloque fijo"><i data-icono="braces" class="cat"></i>function sumarPares(numeros) {</div>
+          <div class="bloque" data-tipo="variable" style="margin-left:22px"><i data-icono="box" class="cat"></i>let suma = 0;</div>
+          <div class="bloque" data-tipo="bucle" style="margin-left:22px"><i data-icono="repeat" class="cat"></i>for (const n of numeros) {</div>
+          <div class="bloque" data-tipo="condicion" style="margin-left:44px"><i data-icono="split" class="cat"></i>if (n % 2 === 0) {</div>
+          <div class="bloque" data-tipo="accion" style="margin-left:66px"><i data-icono="sparkles" class="cat"></i>suma = suma + n;</div>
+          <div class="bloque" data-tipo="devolver" style="margin-left:22px"><i data-icono="corner-down-left" class="cat"></i>return suma;</div>
+          <div class="bloque fijo"><i data-icono="braces" class="cat"></i>}</div>
+        </div>
+      </div>
+    </section>
+
+    <p class="nota">BugDojo es un MVP en validación (charla Startup Lean en AWS). Solo medimos uso anónimo: qué fases completas y si vuelves otro día.</p>
   </main>
   <footer class="firma"><span>@carli.code</span></footer>
 
+  <script src="ui.js"></script>
   <script src="common.js"></script>
 </body>
 </html>
