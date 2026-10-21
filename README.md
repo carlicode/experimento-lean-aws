@@ -14,6 +14,8 @@ Cada landing es un **smoke test**: botón "Reservar acceso por $5/mes" o "No por
 
 **Regla de muerte, dicha antes de empezar:** un producto **vive** si al menos el **30 %** de su grupo reserva. Si ninguno llega, mueren los dos.
 
+> **Siguiente vuelta del ciclo:** [`bugdojo-mvp/`](bugdojo-mvp/README.md) es el MVP funcional de BugDojo (etapa 2): una prueba gratuita con retos reales, sin venta, que mide activación y retención. Se comparte **después** de la charla.
+
 ## Arquitectura
 
 ```

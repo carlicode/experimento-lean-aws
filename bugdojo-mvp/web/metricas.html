@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BugDojo · Métricas del MVP</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .dash { width: 100%; max-width: 1400px; margin: 0 auto; padding: clamp(16px, 3.2vh, 40px) clamp(20px, 4vw, 64px) 80px; display: flex; flex-direction: column; gap: clamp(14px, 2.4vh, 28px); }
+    .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
+    .titulo { font-size: clamp(2.2rem, min(5vw, 8vh), 4.6rem); font-weight: 900; line-height: 1; letter-spacing: -0.03em; margin: 0; }
+    .sub { font-weight: 800; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; font-size: .85rem; margin-bottom: 10px; }
+    .decision { font-weight: 900; letter-spacing: .08em; font-size: clamp(1.1rem, 2vw, 1.7rem); padding: 12px 24px; border-radius: 99px; background: var(--soft); color: var(--muted); }
+    .decision.persevera { background: var(--vive); color: #fff; }
+    .decision.pivota { background: var(--ink); color: #fff; }
+    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 28px); }
+    @media (max-width: 800px) { .kpis { grid-template-columns: 1fr; } }
+    .kpi { border: 2px solid var(--line); border-radius: 24px; padding: clamp(18px, 2.6vh, 30px); display: flex; flex-direction: column; gap: 10px; }
+    .kpi.cumple { border-color: var(--vive); }
+    .kpi .nombre { font-weight: 900; font-size: clamp(1.1rem, 1.6vw, 1.5rem); }
+    .kpi .num { font-size: clamp(3rem, min(7vw, 12vh), 6.5rem); font-weight: 900; line-height: .9; letter-spacing: -0.04em; }
+    .kpi .num small { font-size: .45em; }
+    .kpi .det { font-weight: 800; color: #4a4a55; }
+    .track { position: relative; height: 18px; background: var(--soft); border-radius: 99px; margin-top: 24px; }
+    .fill { height: 100%; width: 0; border-radius: 99px; background: var(--dojo); transition: width .9s cubic-bezier(.2,.8,.2,1); }
+    .marca { position: absolute; top: -24px; bottom: -6px; width: 3px; background: var(--umbral); border-radius: 2px; }
+    .marca span { position: absolute; top: 0; left: 8px; white-space: nowrap; font-weight: 900; font-size: .85rem; color: var(--umbral); }
+    .embudo { border: 2px solid var(--line); border-radius: 24px; padding: clamp(18px, 2.6vh, 30px); }
+    .embudo h3 { margin-bottom: 14px; }
+    .fila { display: grid; grid-template-columns: minmax(170px, 24%) 1fr 90px; gap: 14px; align-items: center; margin: 10px 0; font-weight: 700; }
+    .barras { position: relative; height: 22px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+    .barras div { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; transition: width .8s ease; }
+    .fila b { text-align: right; font-variant-numeric: tabular-nums; }
+    .leyenda { display: flex; gap: 18px; font-weight: 700; color: var(--muted); font-size: .9rem; margin-top: 8px; }
+    .leyenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  </style>
+</head>
+<body>
+  <main class="dash">
+    <div class="top">
+      <div>
+        <p class="sub">🥋 BugDojo · MVP · etapa 2 del ciclo Lean</p>
+        <h1 class="titulo grad">¿Lo usan y vuelven?</h1>
+      </div>
+      <span class="decision" id="decision">FALTAN DATOS</span>
+    </div>
+
+    <section class="kpis">
+      <article class="kpi">
+        <span class="nombre">Personas</span>
+        <span class="num" id="usuarios">0</span>
+        <span class="det">entraron a la prueba gratuita</span>
+      </article>
+      <article class="kpi" id="kpi-act">
+        <span class="nombre">Activación</span>
+        <span class="num" id="act">0<small>%</small></span>
+        <span class="det" id="act-det">resolvieron al menos 1 reto</span>
+        <div class="track"><div class="fill" id="act-fill"></div><div class="marca" id="act-marca"><span></span></div></div>
+      </article>
+      <article class="kpi" id="kpi-ret">
+        <span class="nombre">Retención</span>
+        <span class="num" id="ret">0<small>%</small></span>
+        <span class="det" id="ret-det">volvieron otro día</span>
+        <div class="track"><div class="fill" id="ret-fill"></div><div class="marca" id="ret-marca"><span></span></div></div>
+      </article>
+    </section>
+
+    <section class="embudo">
+      <h3>Embudo por reto</h3>
+      <div id="embudo"></div>
+      <div class="leyenda"><span><i style="background:#ddd6fe"></i>Intentaron</span><span><i style="background:var(--dojo)"></i>Resolvieron</span><span id="feedback"></span></div>
+    </section>
+  </main>
+  <footer class="firma"><span>@carli.code</span></footer>
+
+  <script src="retos.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const DECISION = { persevera: "PERSEVERA 🎉", pivota: "PIVOTA 🔄", faltan_datos: "FALTAN DATOS" };
+
+    function kpi(clave, valor, meta, veredicto, detalle) {
+      const pct = Math.round(valor * 100);
+      $(clave).innerHTML = `${pct}<small>%</small>`;
+      $(clave + "-det").textContent = detalle;
+      $(clave + "-fill").style.width = Math.min(100, pct) + "%";
+      $(clave + "-marca").style.left = meta * 100 + "%";
+      $(clave + "-marca").firstElementChild.textContent = `meta ${Math.round(meta * 100)} %`;
+      $("kpi-" + clave).className = "kpi " + (veredicto === "cumple" ? "cumple" : "");
+    }
+
+    async function actualizar() {
+      let d;
+      try {
+        const r = await fetch("/api/metricas", { cache: "no-store" });
+        if (!r.ok) return;
+        d = await r.json();
+      } catch { return; }
+
+      $("usuarios").textContent = d.usuarios;
+      kpi("act", d.activacion, d.metas.activacion, d.veredictos.activacion, `${d.activados} resolvieron al menos 1 reto`);
+      kpi("ret", d.retencion, d.metas.retencion, d.veredictos.retencion, `${d.retenidos} volvieron otro día`);
+      $("decision").className = "decision " + d.decision;
+      $("decision").textContent = d.decision === "faltan_datos"
+        ? `FALTAN DATOS (mín. ${d.metas.minimo})` : DECISION[d.decision];
+
+      const max = Math.max(1, ...Object.values(d.por_reto).map((x) => x.intentaron));
+      $("embudo").innerHTML = RETOS.map((r) => {
+        const x = d.por_reto[r.id];
+        return `<div class="fila">
+          <span>${r.id} · ${r.titulo}</span>
+          <div class="barras">
+            <div style="width:${(x.intentaron / max) * 100}%;background:#ddd6fe"></div>
+            <div style="width:${(x.resolvieron / max) * 100}%;background:var(--dojo)"></div>
+          </div>
+          <b>${x.resolvieron} / ${x.intentaron}</b>
+        </div>`;
+      }).join("");
+
+      const f = d.feedback;
+      $("feedback").textContent = `¿Volverías mañana? Sí ${f.si} · No ${f.no}`;
+    }
+
+    actualizar();
+    setInterval(actualizar, 5000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>BugDojo · Reto</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav" style="max-width:760px">
+    <a class="logo dojo-c" href="index.html" style="text-decoration:none">🥋 BugDojo</a>
+    <span class="tag" id="cinta">MVP</span>
+  </header>
+
+  <main class="wrap ancho screen">
+    <a class="volver" href="retos.html">← Todos los retos</a>
+    <p class="eyebrow" id="cinturon"></p>
+    <h2 id="titulo"></h2>
+    <p class="enunciado" id="enunciado"></p>
+    <div class="ejemplo" id="ejemplo"></div>
+
+    <textarea id="editor" class="editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Editor de código"></textarea>
+    <button id="ejecutar" class="btn dojo-bg">Ejecutar tests</button>
+    <button id="reiniciar" class="link">Restaurar plantilla</button>
+
+    <p id="err" class="err" hidden style="margin-top:16px"></p>
+    <ul id="tests" class="tests"></ul>
+
+    <div id="exito" class="exito" hidden>
+      <span class="emoji-xl" style="font-size:3rem;margin-bottom:6px">🥋</span>
+      <h2>¡Reto superado!</h2>
+      <p id="exito-txt" class="hint" style="margin:0"></p>
+      <a id="siguiente" class="btn dojo-bg" style="text-align:center;text-decoration:none"></a>
+    </div>
+  </main>
+  <footer class="firma"><span>@carli.code</span></footer>
+
+  <script src="common.js"></script>
+  <script src="retos.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const id = new URLSearchParams(location.search).get("id");
+    const reto = RETOS.find((r) => r.id === id);
+    if (!reto) location.replace("retos.html");
+
+    $("cinturon").textContent = `Cinturón ${reto.cinturon}`;
+    $("cinta").textContent = `Reto ${reto.id} de ${RETOS.length}`;
+    $("titulo").textContent = reto.titulo;
+    $("enunciado").textContent = reto.enunciado;
+    $("ejemplo").textContent = reto.ejemplo;
+    document.title = `BugDojo · ${reto.titulo}`;
+
+    const guardado = (estado.leer().codigo || {})[reto.id];
+    $("editor").value = guardado || reto.plantilla;
+
+    function guardarCodigo() {
+      const codigo = { ...(estado.leer().codigo || {}), [reto.id]: $("editor").value };
+      estado.guardar({ codigo });
+    }
+    $("editor").addEventListener("input", guardarCodigo);
+
+    // Tab escribe 2 espacios en vez de saltar de campo
+    $("editor").addEventListener("keydown", (e) => {
+      if (e.key !== "Tab") return;
+      e.preventDefault();
+      const el = e.target, i = el.selectionStart;
+      el.value = el.value.slice(0, i) + "  " + el.value.slice(el.selectionEnd);
+      el.selectionStart = el.selectionEnd = i + 2;
+      guardarCodigo();
+    });
+
+    $("reiniciar").addEventListener("click", () => {
+      $("editor").value = reto.plantilla;
+      guardarCodigo();
+    });
+
+    function correr(codigo) {
+      return new Promise((resolve) => {
+        const w = new Worker("worker.js");
+        const corte = setTimeout(() => {
+          w.terminate();
+          resolve({ error: "Tu código tardó más de 2 segundos. ¿Hay un bucle infinito?" });
+        }, 2000);
+        w.onmessage = (e) => { clearTimeout(corte); w.terminate(); resolve(e.data); };
+        w.onerror = (e) => { clearTimeout(corte); w.terminate(); resolve({ error: e.message }); };
+        w.postMessage({ codigo, funcion: reto.funcion, tests: reto.tests });
+      });
+    }
+
+    $("ejecutar").addEventListener("click", async () => {
+      $("ejecutar").disabled = true;
+      $("err").hidden = true;
+      $("exito").hidden = true;
+      $("tests").innerHTML = "";
+      evento("intento", { reto: reto.id });
+
+      const r = await correr($("editor").value);
+      $("ejecutar").disabled = false;
+      if (r.error) {
+        $("err").textContent = r.error;
+        $("err").hidden = false;
+        return;
+      }
+
+      $("tests").innerHTML = r.resultados.map((t) => `
+        <li class="${t.ok ? "ok" : "mal"}">
+          <b>${t.ok ? "✓" : "✗"}</b> ${reto.funcion}(${escapar(t.entrada)})<br>
+          esperado: ${escapar(t.esperado)}${t.ok ? "" : `<br>obtenido: ${escapar(t.obtenido)}`}
+        </li>`).join("");
+
+      if (r.resultados.every((t) => t.ok)) celebrar();
+    });
+
+    function celebrar() {
+      const hechos = resueltos();
+      if (!hechos.includes(reto.id)) {
+        estado.guardar({ resueltos: [...hechos, reto.id] });
+        evento("resuelto", { reto: reto.id });
+      }
+      const sig = RETOS.find((r) => !resueltos().includes(r.id));
+      $("exito-txt").textContent = `${resueltos().length} de ${RETOS.length} retos resueltos.`;
+      if (sig) {
+        $("siguiente").textContent = `Siguiente: cinturón ${sig.cinturon} →`;
+        $("siguiente").href = `reto.html?id=${sig.id}`;
+      } else {
+        $("siguiente").textContent = "¡Cinturón negro! Ver mis retos";
+        $("siguiente").href = "retos.html";
+      }
+      $("exito").hidden = false;
+      $("exito").scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function escapar(t) {
+      return String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+  </script>
+</body>
+</html>
