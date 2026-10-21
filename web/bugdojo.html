@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>BugDojo · Entrena tu lógica</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav">
+    <span class="logo dojo-c">🥋 BugDojo</span>
+    <span class="tag">Acceso anticipado</span>
+  </header>
+
+  <main class="wrap screen">
+    <p class="eyebrow dojo-c">Para quienes se traban resolviendo código</p>
+    <h1>Entrena tu lógica <span class="dojo-grad">como en un dojo.</span></h1>
+    <p class="lead">Retos cortos de programación, uno al día, que suben de nivel contigo. Del cinturón blanco al negro.</p>
+
+    <ul class="features">
+      <li>
+        <span class="ico">⏱️</span>
+        <h3>Retos de 10 minutos</h3>
+        <p>Uno al día, pensados para resolver entre clases o antes de dormir.</p>
+      </li>
+      <li>
+        <span class="ico">🧠</span>
+        <h3>Feedback de tu lógica</h3>
+        <p>No solo te dice que fallaste: te muestra en qué paso se rompió tu razonamiento.</p>
+      </li>
+      <li>
+        <span class="ico">🏆</span>
+        <h3>Ranking con tu grupo</h3>
+        <p>Compite con tus amigos y compañeros de curso, y sube de cinturón.</p>
+      </li>
+    </ul>
+
+    <div class="precio"><span class="monto dojo-c">$5</span><span>/ mes</span></div>
+
+    <div id="cta">
+      <button id="si" class="btn dojo-bg">Reservar acceso por $5/mes</button>
+      <button id="no" class="btn ghost">No por ahora</button>
+    </div>
+
+    <div id="motivos" class="motivos" hidden>
+      <p>¿Por qué no? Toca una opción</p>
+      <button class="btn ghost" data-m="caro">Es caro para mí</button>
+      <button class="btn ghost" data-m="no_necesito">No lo necesito</button>
+      <button class="btn ghost" data-m="otra_herramienta">Ya uso otra herramienta</button>
+    </div>
+
+    <p id="err" class="err" hidden></p>
+    <p class="nota">Experimento en vivo de la charla Startup Lean en AWS. No se realizará ningún cobro.</p>
+  </main>
+  <footer class="firma"><span>@carli.code</span></footer>
+
+  <script src="common.js"></script>
+  <script>iniciarLanding("A");</script>
+</body>
+</html>

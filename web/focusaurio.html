@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Focusaurio · Termina lo que empiezas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav">
+    <span class="logo dino-c">🦖 Focusaurio</span>
+    <span class="tag">Acceso anticipado</span>
+  </header>
+
+  <main class="wrap screen">
+    <p class="eyebrow dino-c">Para quienes empiezan mil cosas</p>
+    <h1>El dinosaurio que se come <span class="dino-grad">tu procrastinación.</span></h1>
+    <p class="lead">Planifica tu día en 2 minutos y termina lo que empiezas, sin listas infinitas.</p>
+
+    <ul class="features">
+      <li>
+        <span class="ico">🗓️</span>
+        <h3>Tu día en 2 minutos</h3>
+        <p>Eliges tus 3 tareas clave cada mañana y Focusaurio arma el plan.</p>
+      </li>
+      <li>
+        <span class="ico">🎯</span>
+        <h3>Bloques de enfoque</h3>
+        <p>Temporizador y modo sin distracciones para estudiar y programar.</p>
+      </li>
+      <li>
+        <span class="ico">🔥</span>
+        <h3>Rachas y hábitos</h3>
+        <p>Ves tu constancia crecer semana a semana. El dino crece contigo.</p>
+      </li>
+    </ul>
+
+    <div class="precio"><span class="monto dino-c">$5</span><span>/ mes</span></div>
+
+    <div id="cta">
+      <button id="si" class="btn dino-bg">Reservar acceso por $5/mes</button>
+      <button id="no" class="btn ghost">No por ahora</button>
+    </div>
+
+    <div id="motivos" class="motivos" hidden>
+      <p>¿Por qué no? Toca una opción</p>
+      <button class="btn ghost" data-m="caro">Es caro para mí</button>
+      <button class="btn ghost" data-m="no_necesito">No lo necesito</button>
+      <button class="btn ghost" data-m="otra_herramienta">Ya uso otra herramienta</button>
+    </div>
+
+    <p id="err" class="err" hidden></p>
+    <p class="nota">Experimento en vivo de la charla Startup Lean en AWS. No se realizará ningún cobro.</p>
+  </main>
+  <footer class="firma"><span>@carli.code</span></footer>
+
+  <script src="common.js"></script>
+  <script>iniciarLanding("B");</script>
+</body>
+</html>

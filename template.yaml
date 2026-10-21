@@ -1,0 +1,190 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Experimento Lean en vivo (AWS Student Community Day 2026): BugDojo vs Focusaurio.
+  Formulario + 2 landings + dashboard en S3/CloudFront, API en Lambda y datos en DynamoDB.
+
+Parameters:
+  AlertEmail:
+    Type: String
+    Default: ""
+    Description: Correo para la alerta de presupuesto (opcional). Vacío = sin alerta.
+
+Conditions:
+  HasEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    MemorySize: 128
+    Timeout: 5
+
+Resources:
+  # ---------- Datos ----------
+  Tabla:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  # ---------- API ----------
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 50
+        ThrottlingRateLimit: 25
+
+  Funcion:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.handler
+      Environment:
+        Variables:
+          TABLA: !Ref Tabla
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Tabla
+      Events:
+        Respuesta:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /api/respuesta
+            Method: POST
+        Decision:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /api/decision
+            Method: POST
+        Resultados:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /api/resultados
+            Method: GET
+
+  FuncionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Funcion}
+      RetentionInDays: 7
+
+  # ---------- Sitio estático ----------
+  Sitio:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  OAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${AWS::StackName}-oac
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribucion:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: Experimento Lean en vivo
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_All
+        HttpVersion: http2
+        Origins:
+          - Id: sitio
+            DomainName: !GetAtt Sitio.RegionalDomainName
+            OriginAccessControlId: !GetAtt OAC.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          - Id: api
+            DomainName: !Sub ${Api}.execute-api.${AWS::Region}.amazonaws.com
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+        DefaultCacheBehavior:
+          TargetOriginId: sitio
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # CachingOptimized
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad # CachingDisabled
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac # AllViewerExceptHostHeader
+
+  SitioPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Sitio
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${Sitio.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribucion}
+
+  # ---------- Guardarraíl de costo ----------
+  Presupuesto:
+    Type: AWS::Budgets::Budget
+    Condition: HasEmail
+    Properties:
+      Budget:
+        BudgetName: !Sub ${AWS::StackName}-10usd
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: 10
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 50
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlertEmail
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlertEmail
+
+Outputs:
+  Url:
+    Description: URL pública del experimento (para el QR)
+    Value: !Sub https://${Distribucion.DomainName}
+  Dashboard:
+    Description: Dashboard para proyectar
+    Value: !Sub https://${Distribucion.DomainName}/resultados.html
+  Bucket:
+    Value: !Ref Sitio
+  DistribucionId:
+    Value: !Ref Distribucion
+  TablaNombre:
+    Value: !Ref Tabla

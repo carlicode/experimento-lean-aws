@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>¿Qué producto vive?</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="wrap">
+    <section id="intro" class="screen">
+      <p class="eyebrow">Experimento en vivo · Startup Lean en AWS</p>
+      <h1 class="grad">¿Qué producto vive?</h1>
+      <p class="lead">10 preguntas, 2 minutos. Según tus respuestas te mostraremos un producto. No pedimos datos personales.</p>
+
+      <label for="alias">Tu alias</label>
+      <input id="alias" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="25" placeholder="CarlaMFR">
+      <p class="hint">Tu primer nombre + las iniciales de tus otros nombres y apellidos.<br>Carla Marcela Florida Román → <b>CarlaMFR</b></p>
+      <p id="err" class="err" hidden></p>
+      <button id="empezar" class="btn">Empezar</button>
+    </section>
+
+    <section id="quiz" class="screen" hidden>
+      <div class="progress"><div id="barra"></div></div>
+      <p id="paso" class="eyebrow"></p>
+      <h2 id="pregunta"></h2>
+      <div id="opciones" class="opciones"></div>
+      <button id="atras" class="link">← Atrás</button>
+    </section>
+
+    <section id="enviando" class="screen centro" hidden>
+      <span class="emoji-xl">🧪</span>
+      <h2>Calculando tu producto…</h2>
+    </section>
+  </main>
+  <footer class="firma"><span>@carli.code</span></footer>
+
+  <script src="common.js"></script>
+  <script>
+    // A = BugDojo (lógica de programación) · B = Focusaurio (productividad)
+    const PREGUNTAS = [
+      ["¿Qué te pasa más seguido?",
+        ["Me trabo resolviendo un problema de código", "A"],
+        ["Empiezo cosas y no las termino", "B"]],
+      ["¿Cuántas horas programas a la semana?",
+        ["Más de 5", "A"],
+        ["Menos de 5", "B"]],
+      ["¿Qué te haría sentir que avanzaste en un mes?",
+        ["Resolver problemas más difíciles", "A"],
+        ["Cumplir mis metas sin estrés", "B"]],
+      ["¿Qué usarías antes de dormir?",
+        ["Un reto corto de lógica", "A"],
+        ["Planificar mi día de mañana", "B"]],
+      ["Cuando tienes 20 minutos libres, prefieres…",
+        ["Practicar algo que me haga mejor programador", "A"],
+        ["Ordenar pendientes y sacarlos de la cabeza", "B"]],
+      ["¿Qué te preocupa más de una entrevista técnica?",
+        ["No saber resolver el ejercicio en vivo", "A"],
+        ["No haber preparado nada a tiempo", "B"]],
+      ["¿Cómo aprendes mejor?",
+        ["Resolviendo retos y equivocándome", "A"],
+        ["Con un plan claro de qué estudiar cada día", "B"]],
+      ["¿Qué te motiva más?",
+        ["Subir de nivel y competir con otros", "A"],
+        ["Ver mi lista de tareas completada", "B"]],
+      ["¿Qué frase te describe mejor?",
+        ["“Sé lo que quiero hacer, me falta resolverlo”", "A"],
+        ["“Sé resolverlo, me falta organizarme”", "B"]],
+      ["Si tuvieras que mejorar una sola cosa este semestre, sería…",
+        ["Mi lógica para programar", "A"],
+        ["Mi constancia y mis hábitos", "B"]],
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const respuestas = [];
+    let actual = 0;
+    let alias = "";
+
+    // Si ya participó en este celular, lo llevamos a su paso. ?reiniciar=1 limpia el estado.
+    if (new URLSearchParams(location.search).has("reiniciar")) estado.borrar();
+    const previo = estado.leer();
+    if (previo.decidido) location.replace("gracias.html");
+    else if (previo.grupo) location.replace(PRODUCTOS[previo.grupo].pagina);
+
+    function mostrar(id) {
+      ["intro", "quiz", "enviando"].forEach((s) => ($(s).hidden = s !== id));
+    }
+
+    function error(msg) {
+      $("err").textContent = msg;
+      $("err").hidden = false;
+    }
+
+    function pintarPregunta() {
+      const [texto, ...opciones] = PREGUNTAS[actual];
+      $("paso").textContent = `Pregunta ${actual + 1} de ${PREGUNTAS.length}`;
+      $("barra").style.width = `${(actual / PREGUNTAS.length) * 100}%`;
+      $("pregunta").textContent = texto;
+      $("atras").hidden = actual === 0;
+
+      // Orden aleatorio para no sesgar las respuestas
+      const mezcladas = [...opciones].sort(() => Math.random() - 0.5);
+      $("opciones").innerHTML = "";
+      mezcladas.forEach(([etiqueta, valor]) => {
+        const b = document.createElement("button");
+        b.className = "opcion";
+        b.textContent = etiqueta;
+        b.addEventListener("click", () => elegir(b, valor));
+        $("opciones").appendChild(b);
+      });
+
+      // reinicia la animación de entrada
+      $("quiz").classList.remove("screen");
+      void $("quiz").offsetWidth;
+      $("quiz").classList.add("screen");
+    }
+
+    function elegir(boton, valor) {
+      boton.classList.add("elegida");
+      respuestas[actual] = valor;
+      setTimeout(() => {
+        actual += 1;
+        if (actual < PREGUNTAS.length) pintarPregunta();
+        else enviar();
+      }, 180);
+    }
+
+    async function enviar() {
+      $("barra").style.width = "100%";
+      mostrar("enviando");
+      const r = await api("respuesta", { alias, respuestas });
+      if (r.ok) {
+        estado.guardar({ alias, grupo: r.data.grupo });
+        location.href = PRODUCTOS[r.data.grupo].pagina;
+        return;
+      }
+      mostrar("intro");
+      actual = 0;
+      if (r.status === 409) error(`El alias ${alias} ya existe. Agrégale otra letra (ej: ${alias}x).`);
+      else if (r.status === 400) error("Revisa tu alias: solo letras, entre 3 y 25.");
+      else error("Sin conexión con el servidor. Intenta otra vez en unos segundos.");
+    }
+
+    $("empezar").addEventListener("click", () => {
+      alias = $("alias").value.trim();
+      if (!ALIAS_RE.test(alias)) {
+        error("Solo letras, sin espacios ni números (entre 3 y 25).");
+        return;
+      }
+      $("err").hidden = true;
+      mostrar("quiz");
+      pintarPregunta();
+    });
+    $("alias").addEventListener("keydown", (e) => { if (e.key === "Enter") $("empezar").click(); });
+
+    $("atras").addEventListener("click", () => {
+      if (actual > 0) { actual -= 1; pintarPregunta(); }
+    });
+  </script>
+</body>
+</html>

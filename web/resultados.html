@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resultados en vivo</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { overflow-x: hidden; }
+    .dash {
+      width: 100%;
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: clamp(16px, 3.2vh, 40px) clamp(20px, 4vw, 64px) 76px;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(12px, 2.2vh, 28px);
+      flex: 1;
+    }
+    .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+    .vivo {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-weight: 900; font-size: .9rem; letter-spacing: .14em; color: var(--error);
+      margin-bottom: 10px;
+    }
+    .vivo i { width: 12px; height: 12px; border-radius: 50%; background: var(--error); animation: pulso 1.4s infinite; }
+    .vivo.off { color: var(--muted); }
+    .vivo.off i { background: var(--muted); animation: none; }
+    @keyframes pulso { 0% { box-shadow: 0 0 0 0 rgba(229,72,77,.5); } 100% { box-shadow: 0 0 0 14px rgba(229,72,77,0); } }
+    .titulo { font-size: clamp(2.2rem, min(5.4vw, 8.5vh), 5rem); font-weight: 900; line-height: 1; letter-spacing: -0.03em; margin: 0; }
+    .total { text-align: right; }
+    .total b { display: block; font-size: clamp(2.6rem, min(6.5vw, 11vh), 6rem); font-weight: 900; line-height: .9; letter-spacing: -0.04em; }
+    .total span { font-weight: 800; color: var(--muted); font-size: clamp(.9rem, 1.3vw, 1.2rem); }
+
+    .regla {
+      font-size: clamp(1rem, 1.6vw, 1.45rem); font-weight: 700; color: #3a3a44; margin: 0;
+    }
+    .regla b { color: var(--umbral); }
+
+    .reparto { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: var(--soft); }
+    .reparto div { transition: width .8s cubic-bezier(.2,.8,.2,1); }
+
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 2.4vw, 36px); flex: 1; }
+    @media (max-width: 760px) { .cards { grid-template-columns: 1fr; } }
+
+    .card {
+      border: 2px solid var(--line); border-radius: 28px;
+      padding: clamp(18px, 3vh, 36px) clamp(20px, 2.6vw, 40px);
+      display: flex; flex-direction: column; gap: clamp(8px, 1.4vh, 16px);
+      transition: border-color .4s, box-shadow .4s;
+    }
+    .card.vive { border-color: var(--vive); box-shadow: 0 18px 50px -24px rgba(18,183,106,.55); }
+    .card.muere { opacity: .72; }
+
+    .card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .nombre { font-size: clamp(1.6rem, 2.9vw, 2.8rem); font-weight: 900; letter-spacing: -0.02em; }
+    .grupo { font-weight: 800; color: var(--muted); font-size: clamp(.9rem, 1.3vw, 1.2rem); }
+
+    .pct { font-size: clamp(3.4rem, min(9vw, 14vh), 9rem); font-weight: 900; line-height: .9; letter-spacing: -0.05em; }
+    .pct small { font-size: .45em; letter-spacing: -0.02em; }
+    .detalle { font-weight: 800; color: #4a4a55; font-size: clamp(1rem, 1.5vw, 1.35rem); }
+
+    .track { position: relative; height: clamp(18px, 2.2vw, 28px); background: var(--soft); border-radius: 99px; margin-top: 24px; }
+    .fill { height: 100%; width: 0; border-radius: 99px; transition: width .9s cubic-bezier(.2,.8,.2,1); }
+    .marca { position: absolute; top: -26px; bottom: -6px; width: 3px; background: var(--umbral); border-radius: 2px; }
+    .marca span {
+      position: absolute; top: 0; left: 8px; white-space: nowrap;
+      font-weight: 900; font-size: .9rem; color: var(--umbral);
+    }
+
+    .veredicto {
+      align-self: flex-start;
+      font-weight: 900; letter-spacing: .08em;
+      font-size: clamp(1.1rem, 2vw, 1.8rem);
+      padding: 10px 22px; border-radius: 99px;
+      background: var(--soft); color: var(--muted);
+    }
+    .veredicto.vive { background: var(--vive); color: #fff; animation: pop .5s ease; }
+    .veredicto.muere { background: var(--ink); color: #fff; animation: pop .5s ease; }
+    @keyframes pop { 0% { transform: scale(.85); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+    .motivos-t { font-weight: 800; color: var(--muted); font-size: clamp(.85rem, 1.1vw, 1rem); text-transform: uppercase; letter-spacing: .1em; margin-top: auto; }
+    .motivo { display: grid; grid-template-columns: minmax(150px, 34%) 1fr 36px; align-items: center; gap: 12px; font-weight: 700; font-size: clamp(.9rem, 1.2vw, 1.1rem); }
+    .motivo .mbar { height: 10px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+    .motivo .mbar div { height: 100%; width: 0; background: #c9c9d3; border-radius: 99px; transition: width .8s ease; }
+    .motivo b { text-align: right; }
+
+    .firma { font-size: clamp(1rem, 1.7vw, 1.6rem); }
+    .demo-tag { font-weight: 900; color: var(--umbral); letter-spacing: .1em; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <main class="dash">
+    <div class="top">
+      <div>
+        <div id="vivo" class="vivo"><i></i><span id="vivo-txt">EN VIVO</span></div>
+        <h1 class="titulo grad">¿Qué producto vive?</h1>
+      </div>
+      <div class="total"><b id="total">0</b><span>participantes</span></div>
+    </div>
+
+    <p class="regla">Regla: un producto <b>vive</b> si al menos el <b>30 %</b> de su grupo reserva acceso a $5/mes.</p>
+
+    <div class="reparto" aria-label="Reparto de participantes entre productos">
+      <div id="reparto-a" style="background: var(--dojo); width: 50%"></div>
+      <div id="reparto-b" style="background: var(--dino); width: 50%"></div>
+    </div>
+
+    <section class="cards">
+      <article class="card" id="card-A">
+        <div class="card-head">
+          <span class="nombre" style="color: var(--dojo)">🥋 BugDojo</span>
+          <span class="grupo" id="grupo-A">0 en el grupo</span>
+        </div>
+        <div class="pct" id="pct-A">0<small>%</small></div>
+        <div class="detalle" id="det-A">0 de 0 reservaron</div>
+        <div class="track">
+          <div class="fill" id="fill-A" style="background: var(--dojo)"></div>
+          <div class="marca" style="left: 30%"><span>30 %</span></div>
+        </div>
+        <span class="veredicto" id="ver-A">FALTAN DATOS</span>
+        <div class="motivos-t">Por qué dijeron que no</div>
+        <div id="mot-A"></div>
+      </article>
+
+      <article class="card" id="card-B">
+        <div class="card-head">
+          <span class="nombre" style="color: var(--dino)">🦖 Focusaurio</span>
+          <span class="grupo" id="grupo-B">0 en el grupo</span>
+        </div>
+        <div class="pct" id="pct-B">0<small>%</small></div>
+        <div class="detalle" id="det-B">0 de 0 reservaron</div>
+        <div class="track">
+          <div class="fill" id="fill-B" style="background: var(--dino)"></div>
+          <div class="marca" style="left: 30%"><span>30 %</span></div>
+        </div>
+        <span class="veredicto" id="ver-B">FALTAN DATOS</span>
+        <div class="motivos-t">Por qué dijeron que no</div>
+        <div id="mot-B"></div>
+      </article>
+    </section>
+  </main>
+  <footer class="firma"><span>@carli.code</span></footer>
+
+  <script src="common.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const MOTIVOS = { caro: "Es caro", no_necesito: "No lo necesito", otra_herramienta: "Ya uso otra" };
+    const VEREDICTOS = { vive: "VIVE 🎉", muere: "MUERE 🪦", faltan_datos: "FALTAN DATOS" };
+    const UMBRAL = 0.3;
+    const MINIMO = 5;
+    const modoDemo = new URLSearchParams(location.search).has("demo");
+    const mostrados = {};
+
+    function animarNumero(id, destino, sufijo = "") {
+      const el = $(id);
+      const desde = mostrados[id] ?? 0;
+      mostrados[id] = destino;
+      if (desde === destino) return;
+      const t0 = performance.now();
+      const dur = 700;
+      function paso(t) {
+        const k = Math.min(1, (t - t0) / dur);
+        const v = Math.round(desde + (destino - desde) * (1 - Math.pow(1 - k, 3)));
+        el.innerHTML = v + sufijo;
+        if (k < 1) requestAnimationFrame(paso);
+      }
+      requestAnimationFrame(paso);
+    }
+
+    function pintar(d) {
+      animarNumero("total", d.total);
+      const a = d.grupos.A.participantes, b = d.grupos.B.participantes;
+      const suma = a + b || 1;
+      $("reparto-a").style.width = (a + b ? (a / suma) * 100 : 50) + "%";
+      $("reparto-b").style.width = (a + b ? (b / suma) * 100 : 50) + "%";
+
+      for (const g of ["A", "B"]) {
+        const x = d.grupos[g];
+        const pct = Math.round(x.conversion * 100);
+        $("grupo-" + g).textContent = `${x.participantes} en el grupo`;
+        animarNumero("pct-" + g, pct, "<small>%</small>");
+        $("det-" + g).textContent = `${x.si} de ${x.participantes} reservaron`;
+        $("fill-" + g).style.width = Math.min(100, pct) + "%";
+
+        const ver = $("ver-" + g);
+        if (ver.dataset.v !== x.veredicto) {
+          ver.dataset.v = x.veredicto;
+          ver.className = "veredicto " + (x.veredicto === "faltan_datos" ? "" : x.veredicto);
+          ver.textContent = VEREDICTOS[x.veredicto];
+        }
+        $("card-" + g).className = "card " + (x.veredicto === "faltan_datos" ? "" : x.veredicto);
+
+        const maxMot = Math.max(1, ...Object.values(x.motivos));
+        $("mot-" + g).innerHTML = Object.entries(MOTIVOS).map(([k, etiqueta]) => `
+          <div class="motivo">
+            <span>${etiqueta}</span>
+            <div class="mbar"><div style="width:${(x.motivos[k] / maxMot) * 100}%"></div></div>
+            <b>${x.motivos[k]}</b>
+          </div>`).join("");
+      }
+    }
+
+    function conexion(ok) {
+      $("vivo").classList.toggle("off", !ok);
+      $("vivo-txt").textContent = modoDemo ? "MODO DEMO" : ok ? "EN VIVO" : "RECONECTANDO…";
+    }
+
+    // ---------- Modo demo (Plan B sin internet): /resultados.html?demo ----------
+    const demo = { A: { p: 0, si: 0, m: { caro: 0, no_necesito: 0, otra_herramienta: 0 } },
+                   B: { p: 0, si: 0, m: { caro: 0, no_necesito: 0, otra_herramienta: 0 } } };
+    function datosDemo() {
+      if (demo.A.p + demo.B.p < 100) {
+        for (let i = 0; i < 4; i++) {
+          const g = Math.random() < 0.58 ? "A" : "B";
+          demo[g].p += 1;
+          if (Math.random() < (g === "A" ? 0.42 : 0.18)) demo[g].si += 1;
+          else {
+            const r = Math.random();
+            const k = g === "A" ? (r < .5 ? "caro" : r < .8 ? "otra_herramienta" : "no_necesito")
+                                : (r < .55 ? "otra_herramienta" : r < .8 ? "no_necesito" : "caro");
+            demo[g].m[k] += 1;
+          }
+        }
+      }
+      const grupos = {};
+      for (const g of ["A", "B"]) {
+        const x = demo[g];
+        const conv = x.p ? x.si / x.p : 0;
+        grupos[g] = {
+          participantes: x.p, si: x.si, no: x.p - x.si, conversion: conv, motivos: { ...x.m },
+          veredicto: x.p < MINIMO ? "faltan_datos" : conv >= UMBRAL ? "vive" : "muere",
+        };
+      }
+      return { total: demo.A.p + demo.B.p, grupos };
+    }
+
+    async function actualizar() {
+      if (modoDemo) { conexion(true); pintar(datosDemo()); return; }
+      const r = await api("resultados");
+      conexion(r.ok);
+      if (r.ok) pintar(r.data);
+    }
+
+    actualizar();
+    setInterval(actualizar, modoDemo ? 1500 : 3000);
+  </script>
+</body>
+</html>
