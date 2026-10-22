@@ -19,6 +19,15 @@ Nadie empieza frente a una pantalla en blanco:
 | **2. Arma** | Ordena bloques de código **estilo Scratch** (colores por tipo: variable, bucle, condición, acción, devolver, cierre). Hay bloques trampa, una **guía paso a paso** y botón de **pista**. Se toca para agregar o quitar; en la compu también se arrastra. |
 | **3. Escribe** | Opcional: escribe la función en el editor, sin bloques (puede partir de lo que armó). |
 
+### JavaScript o Python, en cada reto
+
+La persona elige el lenguaje **en cada reto** (con un selector arriba) y el progreso se guarda por separado. Los conceptos, los bloques y las trampas están reescritos para cada lenguaje; el enunciado y los tests son los mismos.
+
+- **JavaScript:** corre en un Web Worker nuevo en cada ejecución.
+- **Python:** corre en el navegador con [Pyodide](https://pyodide.org) (Python compilado a WebAssembly). Pesa ~13 MB la primera vez, se sirve desde tu propio S3 y queda en caché. Empieza a cargar en cuanto se elige Python.
+- En Python no hay llaves: la sangría marca la estructura, así que el taller de bloques tiene menos piezas.
+- En ambos casos el código corre **en el navegador de la persona**, con corte a los 2 segundos; si hay un bucle infinito, el worker se descarta y se crea uno nuevo.
+
 El diseño es mobile first, con layout de 3 columnas en pantallas grandes (paleta · programa · guía) para proyectar. Los iconos son de [Lucide](https://lucide.dev) (ISC), incluidos en `web/icons/`.
 
 ## Hipótesis (definidas antes de ver datos)
@@ -47,20 +56,20 @@ Navegador ─► CloudFront ─┬─► S3        (landing, retos, editor, mét
 
 - **El código de la persona corre en SU navegador**, en un Web Worker con un corte a los 2 segundos (para bucles infinitos). El servidor nunca ejecuta código ajeno.
 - **Identidad anónima:** un `uid` aleatorio en `localStorage`. El progreso y el código también se guardan solo en el navegador.
-- **Al servidor llegan solo eventos:** `visita` (deduplicada por día, hora de Bolivia), `aprendido`, `armado`, `intento`, `resuelto` y `feedback`.
-- **`/metricas.html`** muestra solo totales: activación, retención, embudo por fase y reto, y feedback.
+- **Al servidor llegan solo eventos:** `visita` (deduplicada por día, hora de Bolivia), `aprendido`, `armado`, `intento`, `resuelto` y `feedback`, con el lenguaje (`js` o `py`).
+- **`/metricas.html`** muestra solo totales: activación, retención, lenguaje elegido, embudo por fase y reto, y feedback.
 
 ### Retos
 
 | # | Cinturón | Reto | Función |
 |---|---|---|---|
-| 1 | Blanco | Suma de pares | `sumarPares(numeros)` |
-| 2 | Amarillo | ¿Es palíndromo? | `esPalindromo(texto)` |
-| 3 | Naranja | Cuenta vocales | `contarVocales(texto)` |
-| 4 | Verde | FizzBuzz | `fizzBuzz(n)` |
-| 5 | Negro | Paréntesis balanceados | `estaBalanceado(texto)` |
+| 1 | Blanco | Suma de pares | `sumarPares(numeros)` · `suma_pares(numeros)` |
+| 2 | Amarillo | ¿Es palíndromo? | `esPalindromo(texto)` · `es_palindromo(texto)` |
+| 3 | Naranja | Cuenta vocales | `contarVocales(texto)` · `contar_vocales(texto)` |
+| 4 | Verde | FizzBuzz | `fizzBuzz(n)` · `fizz_buzz(n)` |
+| 5 | Negro | Paréntesis balanceados | `estaBalanceado(texto)` · `esta_balanceado(texto)` |
 
-Conceptos, bloques, guía, trampas y tests se editan en `web/retos.js`.
+Conceptos, bloques, guía, trampas y tests se editan en `web/retos.js` (JavaScript arriba y `PY` para Python).
 
 ## Uso
 
@@ -84,4 +93,6 @@ Eliminar todo:
 ./scripts/destroy.sh
 ```
 
-**Costo:** el mismo stack del experimento (CloudFront, S3, Lambda y DynamoDB on-demand). Con cientos de personas sigue siendo de centavos.
+**Costo:** el mismo stack del experimento (CloudFront, S3, Lambda y DynamoDB on-demand). Con cientos de personas sigue siendo de centavos. Python suma ~13 MB de transferencia por persona la primera vez que lo elige (la capa gratuita de CloudFront cubre 1 TB al mes).
+
+`deploy.sh` descarga Pyodide automáticamente (`scripts/descargar_pyodide.sh`, versión 0.27.8) y lo sube con el sitio. No está en git.

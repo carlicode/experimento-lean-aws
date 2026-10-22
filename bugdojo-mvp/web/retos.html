@@ -15,7 +15,7 @@
   <main class="wrap screen">
     <p class="eyebrow">Prueba gratuita · 5 retos</p>
     <h1>Tu camino al <span class="dojo-grad">cinturón negro</span></h1>
-    <p class="lead">Cada reto tiene 3 fases: <b>Aprende</b>, <b>Arma</b> y <b>Escribe</b>. Ve en orden o elige el que quieras.</p>
+    <p class="lead">Cada reto tiene 3 fases: <b>Aprende</b>, <b>Arma</b> y <b>Escribe</b>, y lo puedes hacer en <b>JavaScript</b> o en <b>Python</b>. Ve en orden o elige el que quieras.</p>
 
     <div id="lista" class="lista"></div>
 
@@ -35,17 +35,21 @@
   <script src="retos.js"></script>
   <script>
     const ICONOS_FASE = { aprendido: "book-open", armado: "puzzle", resuelto: "keyboard" };
-    const armados = RETOS.filter((r) => progreso(r.id).armado).length;
+    const NOMBRE_LANG = { js: "JS", py: "Py" };
+    const armados = RETOS.filter((r) => progreso(r.id, "js").armado || progreso(r.id, "py").armado).length;
     document.getElementById("avance").insertAdjacentHTML("beforeend", `${armados} de ${RETOS.length}`);
 
     document.getElementById("lista").innerHTML = RETOS.map((r) => {
-      const p = progreso(r.id);
-      const fases = FASES.map((f) => `<span class="${p[f] ? "hecha" : ""}" title="${f}">${icono(p[f] && f === "resuelto" ? "circle-check" : ICONOS_FASE[f])}</span>`).join("");
+      const grupos = ["js", "py"].map((l) => {
+        const p = progreso(r.id, l);
+        const fases = FASES.map((f) => `<span class="${p[f] ? "hecha" : ""}" title="${f}">${icono(p[f] && f === "resuelto" ? "circle-check" : ICONOS_FASE[f])}</span>`).join("");
+        return `<span class="grupo-lang"><b>${NOMBRE_LANG[l]}</b>${fases}</span>`;
+      }).join("");
       return `
         <a class="card-reto" href="reto.html?id=${r.id}">
           <span class="cinta" style="background:${r.color}"></span>
           <span class="info"><small>Cinturón ${r.cinturon}</small><b>${r.titulo}</b></span>
-          <span class="fases-mini" aria-label="Fases completadas">${fases}</span>
+          <span class="fases-mini" aria-label="Fases completadas por lenguaje">${grupos}</span>
         </a>`;
     }).join("");
 

@@ -66,6 +66,11 @@
     </section>
 
     <section class="embudo">
+      <h3><i data-icono="code-xml"></i> Lenguaje elegido</h3>
+      <div id="lenguajes"></div>
+    </section>
+
+    <section class="embudo">
       <h3><i data-icono="chart-column"></i> Embudo por reto</h3>
       <div id="embudo"></div>
       <div class="leyenda"><span><i style="background:#ddd6fe"></i>Aprendieron</span><span><i style="background:#a78bfa"></i>Armaron</span><span><i style="background:var(--dojo)"></i>Escribieron</span><span id="feedback"></span></div>
@@ -117,6 +122,18 @@
           <b>${x.aprendieron} · ${x.armaron} · ${x.escribieron}</b>
         </div>`;
       }).join("");
+
+      const NOMBRES = { js: "JavaScript", py: "Python" };
+      const maxL = Math.max(1, d.usuarios);
+      $("lenguajes").innerHTML = Object.entries(d.lenguajes || {}).map(([l, x]) => `
+        <div class="fila">
+          <span>${NOMBRES[l]}</span>
+          <div class="barras">
+            <div style="width:${(x.usuarios / maxL) * 100}%;background:#ddd6fe"></div>
+            <div style="width:${(x.armaron / maxL) * 100}%;background:var(--dojo)"></div>
+          </div>
+          <b>${x.usuarios} · ${x.armaron}</b>
+        </div>`).join("") + `<div class="leyenda"><span><i style="background:#ddd6fe"></i>Probaron</span><span><i style="background:var(--dojo)"></i>Armaron un programa</span></div>`;
 
       const f = d.feedback;
       $("feedback").textContent = `¿Volverías mañana? Sí ${f.si} · No ${f.no}`;

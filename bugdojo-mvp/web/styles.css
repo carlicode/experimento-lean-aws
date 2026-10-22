@@ -122,8 +122,10 @@ a { color: inherit; }
 .card-reto .info { flex: 1; min-width: 0; }
 .card-reto small { display: block; font-weight: 800; color: var(--muted); font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; }
 .card-reto b { font-size: 1.1rem; }
-.fases-mini { display: flex; gap: 6px; color: #c4c4cf; }
+.fases-mini { display: flex; flex-direction: column; gap: 4px; color: #c4c4cf; }
 .fases-mini .hecha { color: var(--ok); }
+.grupo-lang { display: flex; align-items: center; gap: 6px; }
+.grupo-lang b { width: 22px; font-size: .72rem; font-weight: 800; color: var(--muted); letter-spacing: .04em; }
 
 .pregunta-valor { padding: 20px; border-radius: var(--radius); background: var(--dojo-soft); }
 .pregunta-valor p { font-weight: 800; margin: 0 0 14px; font-size: 1.1rem; }
@@ -141,11 +143,21 @@ a { color: inherit; }
 .fase.activa { background: #fff; color: var(--dojo); box-shadow: 0 4px 14px -8px rgba(15, 15, 20, .3); }
 .fase .ok { color: var(--ok); }
 
+.controles { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; width: 100%; }
+.lenguajes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.leng {
+  font: inherit; font-weight: 800; font-size: .9rem; color: var(--muted);
+  padding: 9px 16px; border-radius: 99px; border: 2px solid var(--line); background: #fff; cursor: pointer;
+}
+.leng.activa { background: var(--ink); color: #fff; border-color: var(--ink); }
+.py-estado { font-size: .85rem; font-weight: 700; color: var(--muted); margin-left: 6px; }
+.py-estado.mal { color: var(--error); }
+
 .enunciado {
   padding: 18px 20px; border-radius: var(--radius); background: var(--soft); margin-bottom: 22px;
 }
 .enunciado p { margin: 0 0 10px; font-size: 1.05rem; color: var(--text); }
-.ejemplo { font-family: var(--mono); font-size: .95rem; color: var(--dojo); overflow-x: auto; white-space: pre; }
+.ejemplo { font-family: var(--mono); font-size: .92rem; color: var(--dojo); white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* ---------- Aprende ---------- */
 .concepto { border: 2px solid var(--line); border-radius: 22px; padding: clamp(18px, 3vw, 30px); }
@@ -271,6 +283,7 @@ a { color: inherit; }
 
 /* ---------- Tablet ---------- */
 @media (min-width: 760px) {
+  .controles { width: auto; }
   .wrap { padding: 36px 32px 100px; }
   .nav { padding: 22px 32px 0; }
   .lista { grid-template-columns: repeat(2, 1fr); }

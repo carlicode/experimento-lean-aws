@@ -30,26 +30,42 @@ function uid() {
   return uid;
 }
 
-// Progreso de un reto: { aprendido, armado, resuelto }
-function progreso(id) {
-  return (estado.leer().progreso || {})[id] || {};
+// Clave de progreso: JavaScript conserva la clave original ("1"), Python usa "1:py".
+function clave(id, lang = "js") {
+  return lang === "py" ? `${id}:py` : id;
+}
+
+// Lenguaje elegido para un reto (o el último usado, o JavaScript).
+function lenguajeDe(id) {
+  const e = estado.leer();
+  return (e.lang || {})[id] || e.langPref || "js";
+}
+
+function elegirLenguaje(id, lang) {
+  estado.guardar({ lang: { ...(estado.leer().lang || {}), [id]: lang }, langPref: lang });
+}
+
+// Progreso de un reto en un lenguaje: { aprendido, armado, resuelto }
+function progreso(id, lang = "js") {
+  return (estado.leer().progreso || {})[clave(id, lang)] || {};
 }
 
 // Marca una fase como completada y la reporta una sola vez.
-function marcar(id, fase) {
+function marcar(id, fase, lang = "js") {
   const todo = estado.leer().progreso || {};
-  if (todo[id] && todo[id][fase]) return;
-  estado.guardar({ progreso: { ...todo, [id]: { ...(todo[id] || {}), [fase]: true } } });
-  evento(fase, { reto: id });
+  const k = clave(id, lang);
+  if (todo[k] && todo[k][fase]) return;
+  estado.guardar({ progreso: { ...todo, [k]: { ...(todo[k] || {}), [fase]: true } } });
+  evento(fase, { reto: id, lang });
 }
 
-function guardarEn(clave, id, valor) {
-  const todo = estado.leer()[clave] || {};
-  estado.guardar({ [clave]: { ...todo, [id]: valor } });
+function guardarEn(coleccion, id, valor, lang = "js") {
+  const todo = estado.leer()[coleccion] || {};
+  estado.guardar({ [coleccion]: { ...todo, [clave(id, lang)]: valor } });
 }
 
-function leerDe(clave, id) {
-  return (estado.leer()[clave] || {})[id];
+function leerDe(coleccion, id, lang = "js") {
+  return (estado.leer()[coleccion] || {})[clave(id, lang)];
 }
 
 // Fire-and-forget: las métricas nunca bloquean la experiencia.

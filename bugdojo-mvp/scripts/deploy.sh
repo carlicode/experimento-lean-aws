@@ -23,6 +23,8 @@ BUCKET=$(salida Bucket)
 DIST=$(salida DistribucionId)
 URL=$(salida Url)
 
+./scripts/descargar_pyodide.sh
+
 echo "→ Subiendo el sitio a S3…"
 aws s3 sync web/ "s3://$BUCKET" --delete --region "$REGION"
 

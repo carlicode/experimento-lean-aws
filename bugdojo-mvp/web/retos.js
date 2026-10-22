@@ -322,12 +322,273 @@ const RETOS = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Variante en Python de cada reto. Se combina con el reto base (título,
+// enunciado y tests son los mismos): ver variante().
+// En Python no hay llaves: la sangría (nivel) marca la estructura.
+// ---------------------------------------------------------------------------
+const PY = {
+  "1": {
+    funcion: "suma_pares",
+    parametros: "numeros",
+    ejemplo: "suma_pares([1, 2, 3, 4]) → 6",
+    conceptos: [
+      {
+        titulo: "Una función recibe y devuelve",
+        texto: "Una función recibe datos (parámetros), hace algo con ellos y entrega un resultado con return. En Python se define con def y los dos puntos.",
+        codigo: "def doble(n):\n    return n * 2",
+        pregunta: "¿Qué devuelve doble(4)?",
+        opciones: ["4", "8", "\"doble\""],
+        correcta: 1,
+        explicacion: "n vale 4, y 4 * 2 = 8.",
+      },
+      {
+        titulo: "Recorrer una lista",
+        texto: "for ... in visita cada elemento de la lista, uno por uno. En Python no hay llaves: lo que va con sangría (4 espacios) pertenece al for.",
+        codigo: "for n in [5, 7, 9]:\n    # n vale 5, luego 7, luego 9",
+        pregunta: "¿Cuántas vueltas da este bucle?",
+        opciones: ["1", "3", "9"],
+        correcta: 1,
+        explicacion: "Una vuelta por elemento: 3 elementos, 3 vueltas.",
+      },
+      {
+        titulo: "El residuo con %",
+        texto: "a % b da el residuo de dividir a entre b. Un número es par si su residuo al dividir entre 2 es 0. Para comparar se usa ==.",
+        codigo: "6 % 2  # 0 → par\n7 % 2  # 1 → impar",
+        pregunta: "¿Cuánto es 9 % 2?",
+        opciones: ["0", "1", "4.5"],
+        correcta: 1,
+        explicacion: "9 entre 2 es 4 y sobra 1. Por eso 9 es impar.",
+      },
+    ],
+    bloques: [
+      { codigo: "suma = 0", nivel: 1, tipo: "variable", guia: "Crea un acumulador que empiece en 0." },
+      { codigo: "for n in numeros:", nivel: 1, tipo: "bucle", guia: "Recorre cada número de la lista." },
+      { codigo: "if n % 2 == 0:", nivel: 2, tipo: "condicion", guia: "Pregunta si el número es par." },
+      { codigo: "suma = suma + n", nivel: 3, tipo: "accion", guia: "Si es par, súmalo al acumulador." },
+      { codigo: "return suma", nivel: 1, tipo: "devolver", guia: "Devuelve el resultado, ya fuera del bucle." },
+    ],
+    distractores: [
+      { codigo: "suma = 1", nivel: 1, tipo: "variable" },
+      { codigo: "if n % 2 == 1:", nivel: 2, tipo: "condicion" },
+      { codigo: "return n", nivel: 1, tipo: "devolver" },
+    ],
+  },
+  "2": {
+    funcion: "es_palindromo",
+    parametros: "texto",
+    ejemplo: 'es_palindromo("Anita lava la tina") → True',
+    conceptos: [
+      {
+        titulo: "Normalizar un texto",
+        texto: "Para comparar textos sin que importen mayúsculas ni espacios, primero los dejamos todos iguales.",
+        codigo: '"Hola Mundo".lower()          # "hola mundo"\n"hola mundo".replace(" ", "")  # "holamundo"',
+        pregunta: '¿Qué da "Oso".lower()?',
+        opciones: ['"OSO"', '"oso"', '"Oso"'],
+        correcta: 1,
+        explicacion: "lower() convierte todas las letras a minúsculas.",
+      },
+      {
+        titulo: "Invertir un texto",
+        texto: "En Python, texto[::-1] recorre el texto de atrás hacia adelante y devuelve una copia al revés.",
+        codigo: '"hola"[::-1]   # "aloh"',
+        pregunta: 'Qué da "sol"[::-1]?',
+        opciones: ['"sol"', '"los"', '["l", "o", "s"]'],
+        correcta: 1,
+        explicacion: "Se lee de atrás hacia adelante: \"los\".",
+      },
+      {
+        titulo: "Comparar con ==",
+        texto: "== compara dos valores y devuelve True o False. Puedes devolver esa comparación directamente.",
+        codigo: '"ana" == "ana"  # True\n"ana" == "Ana"  # False',
+        pregunta: 'Qué da "abc" == "cba"?',
+        opciones: ["True", "False"],
+        correcta: 1,
+        explicacion: "Las letras están en distinto orden, así que no son iguales.",
+      },
+    ],
+    bloques: [
+      { codigo: 'limpio = texto.lower().replace(" ", "")', nivel: 1, tipo: "variable", guia: "Normaliza el texto: minúsculas y sin espacios." },
+      { codigo: "al_reves = limpio[::-1]", nivel: 1, tipo: "variable", guia: "Construye la versión al revés." },
+      { codigo: "return limpio == al_reves", nivel: 1, tipo: "devolver", guia: "Devuelve si ambas versiones son iguales." },
+    ],
+    distractores: [
+      { codigo: "limpio = texto.upper()", nivel: 1, tipo: "variable" },
+      { codigo: "al_reves = limpio.reverse()", nivel: 1, tipo: "variable" },
+      { codigo: "return limpio == texto", nivel: 1, tipo: "devolver" },
+    ],
+  },
+  "3": {
+    funcion: "contar_vocales",
+    parametros: "texto",
+    ejemplo: 'contar_vocales("Programación") → 5',
+    conceptos: [
+      {
+        titulo: "Un contador",
+        texto: "Un contador es una variable que empieza en 0 y sube de 1 en 1 cada vez que pasa algo.",
+        codigo: "total = 0\ntotal = total + 1  # ahora vale 1",
+        pregunta: "Si total empieza en 0 y le sumas 1 tres veces, ¿cuánto vale?",
+        opciones: ["1", "3", "0"],
+        correcta: 1,
+        explicacion: "0 + 1 + 1 + 1 = 3.",
+      },
+      {
+        titulo: "Recorrer un texto",
+        texto: "for ... in también funciona con textos: visita cada letra.",
+        codigo: 'for letra in "sol":\n    # "s", luego "o", luego "l"',
+        pregunta: '¿Cuántas vueltas da el bucle con "luna"?',
+        opciones: ["1", "4", "2"],
+        correcta: 1,
+        explicacion: "Una vuelta por letra: l, u, n, a.",
+      },
+      {
+        titulo: "¿Está dentro? in",
+        texto: "La palabra in pregunta si algo está dentro de un texto o una lista. Devuelve True o False.",
+        codigo: '"e" in "aeiou"   # True\n"x" in "aeiou"   # False',
+        pregunta: 'Qué da "á" in "aeiou"?',
+        opciones: ["True", "False"],
+        correcta: 1,
+        explicacion: "\"á\" con tilde es otra letra: hay que agregarla a la lista.",
+      },
+    ],
+    bloques: [
+      { codigo: 'vocales = "aeiouáéíóú"', nivel: 1, tipo: "variable", guia: "Guarda la lista de vocales, con tildes." },
+      { codigo: "total = 0", nivel: 1, tipo: "variable", guia: "Crea un contador en 0." },
+      { codigo: "for letra in texto.lower():", nivel: 1, tipo: "bucle", guia: "Recorre cada letra en minúsculas." },
+      { codigo: "if letra in vocales:", nivel: 2, tipo: "condicion", guia: "Pregunta si la letra es vocal." },
+      { codigo: "total = total + 1", nivel: 3, tipo: "accion", guia: "Si es vocal, suma 1 al contador." },
+      { codigo: "return total", nivel: 1, tipo: "devolver", guia: "Devuelve el contador, fuera del bucle." },
+    ],
+    distractores: [
+      { codigo: 'vocales = "aeiou"', nivel: 1, tipo: "variable" },
+      { codigo: "for letra in texto:", nivel: 1, tipo: "bucle" },
+      { codigo: "total = total + letra", nivel: 3, tipo: "accion" },
+    ],
+  },
+  "4": {
+    funcion: "fizz_buzz",
+    parametros: "n",
+    ejemplo: 'fizz_buzz(5) → ["1", "2", "Fizz", "4", "Buzz"]',
+    conceptos: [
+      {
+        titulo: "Bucle con range",
+        texto: "range(1, 4) genera 1, 2, 3: empieza en el primero y se detiene ANTES del último. Por eso, para llegar hasta n, se escribe range(1, n + 1).",
+        codigo: "for i in range(1, 4):\n    # i vale 1, luego 2, luego 3",
+        pregunta: "Con n = 4, ¿cuál es el último valor de i en range(1, n + 1)?",
+        opciones: ["3", "4", "5"],
+        correcta: 1,
+        explicacion: "range(1, 5) genera 1, 2, 3, 4: el último es 4.",
+      },
+      {
+        titulo: "Agregar con append",
+        texto: "append agrega un elemento al final de una lista.",
+        codigo: 'lista = []\nlista.append("a")\nlista.append("b")  # ["a", "b"]',
+        pregunta: "¿Cómo queda [1] después de append(2)?",
+        opciones: ["[2, 1]", "[1, 2]", "[2]"],
+        correcta: 1,
+        explicacion: "append agrega al final.",
+      },
+      {
+        titulo: "El orden de los if importa",
+        texto: "if / elif / else revisa en orden y se queda con el primero que se cumple. Por eso el caso más específico va primero.",
+        codigo: "if i % 15 == 0:      # múltiplo de 3 y de 5\n    ...\nelif i % 3 == 0:\n    ...",
+        pregunta: "¿Por qué revisamos i % 15 antes que i % 3?",
+        opciones: ["Porque es más rápido", "Porque si no, 15 daría \"Fizz\"", "No importa el orden"],
+        correcta: 1,
+        explicacion: "15 también es múltiplo de 3: si ese if va primero, nunca llegaría a \"FizzBuzz\".",
+      },
+    ],
+    bloques: [
+      { codigo: "resultado = []", nivel: 1, tipo: "variable", guia: "Crea una lista vacía para el resultado." },
+      { codigo: "for i in range(1, n + 1):", nivel: 1, tipo: "bucle", guia: "Recorre del 1 al n." },
+      { codigo: "if i % 15 == 0:", nivel: 2, tipo: "condicion", guia: "Primero el caso más específico: múltiplo de 15." },
+      { codigo: 'resultado.append("FizzBuzz")', nivel: 3, tipo: "accion", guia: "Agrega \"FizzBuzz\"." },
+      { codigo: "elif i % 3 == 0:", nivel: 2, tipo: "condicion", guia: "Si no, ¿es múltiplo de 3?" },
+      { codigo: 'resultado.append("Fizz")', nivel: 3, tipo: "accion", guia: "Agrega \"Fizz\"." },
+      { codigo: "elif i % 5 == 0:", nivel: 2, tipo: "condicion", guia: "Si no, ¿es múltiplo de 5?" },
+      { codigo: 'resultado.append("Buzz")', nivel: 3, tipo: "accion", guia: "Agrega \"Buzz\"." },
+      { codigo: "else:", nivel: 2, tipo: "condicion", guia: "Para cualquier otro número…" },
+      { codigo: "resultado.append(str(i))", nivel: 3, tipo: "accion", guia: "…agrega el número como texto." },
+      { codigo: "return resultado", nivel: 1, tipo: "devolver", guia: "Devuelve la lista, fuera del bucle." },
+    ],
+    distractores: [
+      { codigo: "for i in range(n):", nivel: 1, tipo: "bucle" },
+      { codigo: "resultado.append(i)", nivel: 3, tipo: "accion" },
+    ],
+  },
+  "5": {
+    funcion: "esta_balanceado",
+    parametros: "texto",
+    ejemplo: 'esta_balanceado("{[()]}") → True',
+    conceptos: [
+      {
+        titulo: "Una pila",
+        texto: "Una pila es como una torre de platos: el último que pones es el primero que sacas. En Python, append pone y pop saca.",
+        codigo: 'pila = []\npila.append("(")\npila.append("[")\npila.pop()  # "["',
+        pregunta: 'Pones "a", luego "b", luego "c". ¿Qué sale con pop()?',
+        opciones: ['"a"', '"c"', '"b"'],
+        correcta: 1,
+        explicacion: "Sale el último que entró: \"c\".",
+      },
+      {
+        titulo: "Un diccionario",
+        texto: "Un diccionario guarda pares clave → valor. Aquí lo usamos para saber qué símbolo abre a cada cierre.",
+        codigo: 'pares = {")": "(", "]": "["}\npares[")"]  # "("',
+        pregunta: 'Con pares = {"}": "{"}, ¿qué da pares["}"]?',
+        opciones: ['"}"', '"{"', "None"],
+        correcta: 1,
+        explicacion: "La clave \"}\" guarda el valor \"{\".",
+      },
+      {
+        titulo: "Cuidado con pop en una lista vacía",
+        texto: "Si llamas pop() en una pila vacía, Python da error. Por eso antes preguntamos si la pila tiene algo: not pila es True cuando está vacía.",
+        codigo: "pila = []\nnot pila      # True: está vacía\npila.pop()    # ¡error!",
+        pregunta: "¿Qué da not pila cuando pila = [\"(\"]?",
+        opciones: ["True", "False"],
+        correcta: 1,
+        explicacion: "La pila tiene un elemento, así que no está vacía: not pila es False.",
+      },
+    ],
+    bloques: [
+      { codigo: "pila = []", nivel: 1, tipo: "variable", guia: "Crea una pila vacía." },
+      { codigo: 'pares = {")": "(", "]": "[", "}": "{"}', nivel: 1, tipo: "variable", guia: "Guarda qué símbolo abre a cada cierre." },
+      { codigo: "for c in texto:", nivel: 1, tipo: "bucle", guia: "Recorre cada símbolo." },
+      { codigo: 'if c in "([{":', nivel: 2, tipo: "condicion", guia: "¿Es un símbolo que abre?" },
+      { codigo: "pila.append(c)", nivel: 3, tipo: "accion", guia: "Si abre, ponlo en la pila." },
+      { codigo: "elif not pila or pila.pop() != pares[c]:", nivel: 2, tipo: "condicion", guia: "Si cierra: ¿la pila está vacía o el último no es su pareja?" },
+      { codigo: "return False", nivel: 3, tipo: "devolver", guia: "En cualquiera de los dos casos, ya sabemos: False." },
+      { codigo: "return len(pila) == 0", nivel: 1, tipo: "devolver", guia: "Al final, la pila debe quedar vacía." },
+    ],
+    distractores: [
+      { codigo: "return True", nivel: 1, tipo: "devolver" },
+      { codigo: "pila.pop(0)", nivel: 3, tipo: "accion" },
+    ],
+  },
+};
+
+// Reto completo en el lenguaje pedido: "js" o "py".
+function variante(reto, lang) {
+  return lang === "py" ? { ...reto, ...PY[reto.id], lang: "py" } : { ...reto, lang: "js" };
+}
+
 // Código completo a partir de una lista de bloques (para correr los tests).
 function armarCodigo(reto, bloques) {
+  if (reto.lang === "py") {
+    const cuerpo = bloques.map((b) => "    ".repeat(b.nivel) + b.codigo).join("\n");
+    return `def ${reto.funcion}(${reto.parametros}):\n${cuerpo}\n`;
+  }
   const cuerpo = bloques.map((b) => "  ".repeat(b.nivel) + b.codigo).join("\n");
   return `function ${reto.funcion}(${reto.parametros}) {\n${cuerpo}\n}\n`;
 }
 
 function plantilla(reto) {
+  if (reto.lang === "py") {
+    return `def ${reto.funcion}(${reto.parametros}):\n    # tu código aquí\n    pass\n`;
+  }
   return `function ${reto.funcion}(${reto.parametros}) {\n  // tu código aquí\n}\n`;
+}
+
+// Cabecera y cierre de la función para mostrar en el taller.
+function cabeceraFuncion(reto) {
+  return reto.lang === "py" ? `def ${reto.funcion}(${reto.parametros}):` : `function ${reto.funcion}(${reto.parametros}) {`;
 }

@@ -20,11 +20,18 @@
         <p class="eyebrow" id="cinturon"></p>
         <h2 id="titulo"></h2>
       </div>
-      <nav class="fases" aria-label="Fases del reto">
-        <button class="fase" data-fase="aprende"><i data-icono="book-open"></i>Aprende<span class="ok-slot"></span></button>
-        <button class="fase" data-fase="arma"><i data-icono="puzzle"></i>Arma<span class="ok-slot"></span></button>
-        <button class="fase" data-fase="escribe"><i data-icono="keyboard"></i>Escribe<span class="ok-slot"></span></button>
-      </nav>
+      <div class="controles">
+        <div class="lenguajes" role="group" aria-label="Lenguaje">
+          <button class="leng" data-lang="js">JavaScript</button>
+          <button class="leng" data-lang="py">Python</button>
+          <span class="py-estado" id="py-estado" hidden></span>
+        </div>
+        <nav class="fases" aria-label="Fases del reto">
+          <button class="fase" data-fase="aprende"><i data-icono="book-open"></i>Aprende<span class="ok-slot"></span></button>
+          <button class="fase" data-fase="arma"><i data-icono="puzzle"></i>Arma<span class="ok-slot"></span></button>
+          <button class="fase" data-fase="escribe"><i data-icono="keyboard"></i>Escribe<span class="ok-slot"></span></button>
+        </nav>
+      </div>
     </div>
 
     <!-- ============ 1 · APRENDE ============ -->
@@ -55,7 +62,7 @@
         <div class="lienzo">
           <div class="bloque fijo" id="cabeza"></div>
           <div class="zona" id="zona"></div>
-          <div class="bloque fijo"><i data-icono="braces" class="cat"></i>}</div>
+          <div class="bloque fijo" id="cierre-fijo"><i data-icono="braces" class="cat"></i>}</div>
         </div>
       </div>
 
@@ -117,8 +124,30 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const id = new URLSearchParams(location.search).get("id");
-    const reto = RETOS.find((r) => r.id === id);
-    if (!reto) location.replace("retos.html");
+    const base = RETOS.find((r) => r.id === id);
+    if (!base) location.replace("retos.html");
+    const lang = lenguajeDe(id);
+    const reto = variante(base, lang);
+
+    // ---------- Lenguaje ----------
+    document.querySelectorAll(".leng").forEach((b) => {
+      b.classList.toggle("activa", b.dataset.lang === lang);
+      b.addEventListener("click", () => {
+        if (b.dataset.lang === lang) return;
+        elegirLenguaje(id, b.dataset.lang);
+        location.reload();
+      });
+    });
+    if (lang === "py") {
+      $("cierre-fijo").hidden = true;
+      // Pyodide pesa ~10 MB la primera vez: empieza a cargar ya y avisa.
+      const estadoPy = $("py-estado");
+      estadoPy.hidden = false;
+      estadoPy.textContent = "Cargando Python…";
+      iniciarPython()
+        .then(() => { estadoPy.textContent = "Python listo"; setTimeout(() => (estadoPy.hidden = true), 1800); })
+        .catch(() => { estadoPy.textContent = "No se pudo cargar Python"; estadoPy.classList.add("mal"); });
+    }
 
     // ---------- Cabecera ----------
     document.title = `BugDojo · ${reto.titulo}`;
@@ -129,7 +158,7 @@
     document.querySelectorAll(".txt-ejemplo").forEach((el) => (el.textContent = reto.ejemplo));
 
     function siguienteReto() {
-      return RETOS.find((r) => r.id !== reto.id && !progreso(r.id).armado);
+      return RETOS.find((r) => r.id !== reto.id && !progreso(r.id, lang).armado);
     }
     function pintarSiguiente() {
       const sig = siguienteReto();
@@ -142,7 +171,7 @@
     // ---------- Fases ----------
     const FASE_DE = { aprende: "aprendido", arma: "armado", escribe: "resuelto" };
     function pintarChecks() {
-      const p = progreso(reto.id);
+      const p = progreso(reto.id, lang);
       document.querySelectorAll(".fase").forEach((b) => {
         b.querySelector(".ok-slot").innerHTML = p[FASE_DE[b.dataset.fase]] ? icono("circle-check", "ok") : "";
       });
@@ -195,7 +224,7 @@
 
       $("sig-concepto").addEventListener("click", () => {
         if (ultimo) {
-          marcar(reto.id, "aprendido");
+          marcar(reto.id, "aprendido", lang);
           pintarChecks();
           mostrarFase("arma");
         } else {
@@ -224,9 +253,9 @@
       return a;
     }
     const ordenPaleta = mezclar([...piezas.keys()], Number(reto.id) * 7);
-    let orden = (leerDe("armado", reto.id) || []).filter((k) => piezas.has(k));
+    let orden = (leerDe("armado", reto.id, lang) || []).filter((k) => piezas.has(k));
 
-    $("cabeza").innerHTML = `${icono("braces", "cat")}function ${reto.funcion}(${reto.parametros}) {`;
+    $("cabeza").innerHTML = `${icono("braces", "cat")}${escapar(cabeceraFuncion(reto))}`;
     $("leyenda").innerHTML = Object.entries(TIPOS)
       .filter(([t]) => [...piezas.values()].some((p) => p.tipo === t))
       .map(([t, info]) => `<span><i style="background:var(--b-${t})"></i>${info.nombre}</span>`).join("");
@@ -258,7 +287,7 @@
       $("g-texto").textContent = orden.length < total
         ? `Paso ${orden.length + 1}: ${reto.bloques[orden.length].guia}`
         : "Ya tienes todos los bloques. Presiona Comprobar programa.";
-      guardarEn("armado", reto.id, orden);
+      guardarEn("armado", reto.id, orden, lang);
     }
 
     function cambio() {
@@ -385,14 +414,16 @@
       $("a-tests").innerHTML = "";
       if (r.error) {
         $("a-err").textContent = r.error.startsWith("Error de sintaxis")
-          ? "Tu programa aún no está completo: revisa que cada { tenga su } y que no falten pasos."
+          ? (lang === "py"
+              ? "Tu programa aún no está completo: revisa la sangría y que no falten pasos."
+              : "Tu programa aún no está completo: revisa que cada { tenga su } y que no falten pasos.")
           : r.error;
         $("a-err").hidden = false;
         return;
       }
       pintarTests($("a-tests"), reto, r.resultados);
       if (r.resultados.every((t) => t.ok)) {
-        marcar(reto.id, "armado");
+        marcar(reto.id, "armado", lang);
         pintarChecks();
         pintarSiguiente();
         $("a-exito").hidden = false;
@@ -408,15 +439,16 @@
     pintarTaller();
 
     // ================= 3 · ESCRIBE =================
-    $("editor").value = leerDe("codigo", reto.id) || plantilla(reto);
-    const guardarCodigo = () => guardarEn("codigo", reto.id, $("editor").value);
+    $("editor").value = leerDe("codigo", reto.id, lang) || plantilla(reto);
+    const guardarCodigo = () => guardarEn("codigo", reto.id, $("editor").value, lang);
+    const SANGRIA = lang === "py" ? "    " : "  ";
     $("editor").addEventListener("input", guardarCodigo);
     $("editor").addEventListener("keydown", (e) => {
       if (e.key !== "Tab") return;
       e.preventDefault();
       const el = e.target, i = el.selectionStart;
-      el.value = el.value.slice(0, i) + "  " + el.value.slice(el.selectionEnd);
-      el.selectionStart = el.selectionEnd = i + 2;
+      el.value = el.value.slice(0, i) + SANGRIA + el.value.slice(el.selectionEnd);
+      el.selectionStart = el.selectionEnd = i + SANGRIA.length;
       guardarCodigo();
     });
     $("restaurar").addEventListener("click", () => { $("editor").value = plantilla(reto); guardarCodigo(); });
@@ -435,7 +467,7 @@
       $("e-exito").hidden = true;
       $("e-tests").innerHTML = "";
       $("ejecutar").disabled = true;
-      evento("intento", { reto: reto.id });
+      evento("intento", { reto: reto.id, lang });
       const r = await correrTests($("editor").value, reto);
       $("ejecutar").disabled = false;
       if (r.error) {
@@ -445,7 +477,7 @@
       }
       pintarTests($("e-tests"), reto, r.resultados);
       if (r.resultados.every((t) => t.ok)) {
-        marcar(reto.id, "resuelto");
+        marcar(reto.id, "resuelto", lang);
         pintarChecks();
         pintarSiguiente();
         $("e-exito").hidden = false;
@@ -456,7 +488,7 @@
     // ---------- Inicio: hash o primera fase pendiente ----------
     pintarChecks();
     pintarSiguiente();
-    const p = progreso(reto.id);
+    const p = progreso(reto.id, lang);
     const desdeHash = location.hash.slice(1);
     mostrarFase(["aprende", "arma", "escribe"].includes(desdeHash) ? desdeHash
       : !p.aprendido ? "aprende" : !p.armado ? "arma" : "escribe");

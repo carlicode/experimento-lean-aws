@@ -3,8 +3,9 @@
 No hay cuentas, correos ni pagos. Cada navegador tiene un uid aleatorio.
 
 Rutas (HTTP API, detrás de CloudFront en /api/*):
-  POST /api/evento    {uid, tipo, reto?, valor?}
+  POST /api/evento    {uid, tipo, reto?, lang?, valor?}
                       tipo: visita | aprendido | armado | intento | resuelto | feedback
+                      lang: js (por defecto) | py
   GET  /api/metricas  -> solo totales agregados
 """
 import json
@@ -20,6 +21,7 @@ UID_RE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 RETOS = {"1", "2", "3", "4", "5"}
 BOLIVIA = timezone(timedelta(hours=-4))
 FASES = ("aprendido", "armado", "resuelto")  # Aprende → Arma → Escribe
+LENGUAJES = ("js", "py")
 
 # Hipótesis del MVP (se definen antes de ver datos)
 META_ACTIVACION = 0.40   # arman al menos 1 programa
@@ -43,6 +45,9 @@ def registrar_evento(cuerpo):
     uid = str(cuerpo.get("uid", ""))
     tipo = cuerpo.get("tipo")
     reto = str(cuerpo.get("reto", ""))
+    lang = cuerpo.get("lang", "js")
+    if lang not in LENGUAJES:
+        return respuesta(400, {"error": "lenguaje_invalido"})
     if not UID_RE.fullmatch(uid):
         return respuesta(400, {"error": "uid_invalido"})
 
@@ -55,7 +60,7 @@ def registrar_evento(cuerpo):
             expr, nombres, valores = "ADD #n :uno", {"#n": "intentos"}, {":uno": 1}
         else:
             expr, nombres, valores = "SET #f = :si", {"#f": tipo}, {":si": True}
-        tabla.update_item(Key={"uid": uid, "sk": f"reto#{reto}"}, UpdateExpression=expr,
+        tabla.update_item(Key={"uid": uid, "sk": f"reto#{reto}#{lang}"}, UpdateExpression=expr,
                           ExpressionAttributeNames=nombres, ExpressionAttributeValues=valores)
     elif tipo == "feedback":
         valor = cuerpo.get("valor")
@@ -83,22 +88,30 @@ def metricas():
         kwargs["ExclusiveStartKey"] = pagina["LastEvaluatedKey"]
 
     dias, activados, feedback = {}, set(), {"si": 0, "no": 0}
-    por_reto = {r: {"aprendieron": 0, "armaron": 0, "escribieron": 0} for r in sorted(RETOS)}
+    fase_por_reto = {r: {f: set() for f in FASES} for r in RETOS}   # usuarios únicos
+    usuarios_lang = {l: set() for l in LENGUAJES}
+    armaron_lang = {l: set() for l in LENGUAJES}
     for i in items:
         uid, sk = i["uid"], i["sk"]
         dias.setdefault(uid, set())
         if sk.startswith("visita#"):
             dias[uid].add(sk)
         elif sk.startswith("reto#"):
-            r = sk.split("#", 1)[1]
-            if r in por_reto:
-                por_reto[r]["aprendieron"] += 1 if i.get("aprendido") else 0
-                por_reto[r]["armaron"] += 1 if i.get("armado") else 0
-                por_reto[r]["escribieron"] += 1 if i.get("resuelto") else 0
-                if i.get("armado") or i.get("resuelto"):
-                    activados.add(uid)
+            _, r, *resto = sk.split("#")
+            lang = resto[0] if resto else "js"   # datos anteriores no traían lenguaje
+            if r not in fase_por_reto or lang not in LENGUAJES:
+                continue
+            for fase in FASES:
+                if i.get(fase):
+                    fase_por_reto[r][fase].add(uid)
+                    usuarios_lang[lang].add(uid)
+            if i.get("armado") or i.get("resuelto"):
+                activados.add(uid)
+                armaron_lang[lang].add(uid)
         elif sk == "feedback" and i.get("valor") in feedback:
             feedback[i["valor"]] += 1
+    por_reto = {r: {"aprendieron": len(f["aprendido"]), "armaron": len(f["armado"]),
+                    "escribieron": len(f["resuelto"])} for r, f in sorted(fase_por_reto.items())}
 
     usuarios = len(dias)
     retenidos = sum(1 for d in dias.values() if len(d) >= 2)
@@ -121,6 +134,7 @@ def metricas():
         "veredictos": {"activacion": v_act, "retencion": v_ret},
         "decision": decision,
         "por_reto": por_reto,
+        "lenguajes": {l: {"usuarios": len(usuarios_lang[l]), "armaron": len(armaron_lang[l])} for l in LENGUAJES},
         "feedback": feedback,
     })
 
