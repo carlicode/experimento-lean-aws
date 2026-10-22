@@ -2,6 +2,7 @@
 # Despliega la infraestructura (SAM) y sube el sitio. Uso:
 #   ./scripts/deploy.sh                      # sin alerta de presupuesto
 #   ALERT_EMAIL=tu@correo.com ./scripts/deploy.sh
+# En CI también lee SAM_S3_BUCKET y CFN_ROLE_ARN (opcionales).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -9,11 +10,19 @@ STACK="bugdojo-mvp"
 REGION="us-east-1"
 
 echo "→ Desplegando infraestructura con SAM…"
+ARGS=()
 if [ -n "${ALERT_EMAIL:-}" ]; then
-  sam deploy --parameter-overrides "AlertEmail=$ALERT_EMAIL"
-else
-  sam deploy
+  ARGS+=(--parameter-overrides "AlertEmail=$ALERT_EMAIL")
 fi
+# Desde GitHub Actions (ver infra/github-oidc.yaml): bucket de artefactos propio
+# y CloudFormation crea los recursos con su rol, no con el de GitHub.
+if [ -n "${SAM_S3_BUCKET:-}" ]; then
+  ARGS+=(--no-resolve-s3 --s3-bucket "$SAM_S3_BUCKET")
+fi
+if [ -n "${CFN_ROLE_ARN:-}" ]; then
+  ARGS+=(--role-arn "$CFN_ROLE_ARN")
+fi
+sam deploy ${ARGS[@]+"${ARGS[@]}"}
 
 salida() {
   aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" \

@@ -1,0 +1,8 @@
+version: 2
+updates:
+  # Las acciones están fijadas por SHA (con el tag en comentario); dependabot
+  # abre PRs para subirlas de versión.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
