@@ -5,10 +5,15 @@ Description: >
   solo a jobs que corren en el environment indicado. Se despliega una sola vez.
 
 Parameters:
-  Repositorio:
+  PrefijoSub:
     Type: String
-    Default: carlicode/experimento-lean-aws
-    Description: owner/repo de GitHub que puede asumir el rol
+    Default: repo:carlicode@43819418/experimento-lean-aws@1427917805
+    AllowedPattern: ^repo:[^:\s]+$
+    Description: >
+      Prefijo del claim sub de OIDC de este repo. Los repos creados desde el 15 de
+      julio de 2026 usan el formato inmutable repo:OWNER@OWNER-ID/REPO@REPO-ID (con IDs
+      numéricos); los más antiguos usan repo:OWNER/REPO. Pide el valor exacto a GitHub:
+      gh api repos/OWNER/REPO/actions/oidc/customization/sub --jq .sub_claim_prefix
   Environment:
     Type: String
     Default: produccion
@@ -166,7 +171,7 @@ Resources:
                 # desplegar depende del ajuste "Deployment branches = main" del
                 # environment en GitHub (ver README). Un PR o un fork nunca corren
                 # en este environment, así que tampoco pueden asumir el rol.
-                token.actions.githubusercontent.com:sub: !Sub repo:${Repositorio}:environment:${Environment}
+                token.actions.githubusercontent.com:sub: !Sub ${PrefijoSub}:environment:${Environment}
       Policies:
         - PolicyName: desplegar-stacks
           PolicyDocument:

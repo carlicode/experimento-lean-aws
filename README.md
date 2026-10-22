@@ -119,8 +119,19 @@ Se configura una sola vez:
      --query "Stacks[0].Outputs" --output table
    ```
 
+   El rol solo acepta tokens cuyo `sub` empiece con el parámetro `PrefijoSub`. Los repos
+   creados desde el 15 de julio de 2026 usan el formato inmutable con IDs numéricos
+   (`repo:OWNER@OWNER-ID/REPO@REPO-ID`), así que pide el valor exacto a GitHub y pásalo con
+   `--parameter-overrides` si tu repo no es este:
+
+   ```bash
+   gh api repos/OWNER/REPO/actions/oidc/customization/sub --jq .sub_claim_prefix
+   ```
+
 2. En GitHub, **Settings → Environments → New environment** `produccion`, con
-   *Required reviewers* (tú) y *Deployment branches* limitado a `main`.
+   *Required reviewers* (tú) y *Deployment branches* limitado a `main`. Las reglas del
+   environment solo están disponibles en repos privados con un plan de pago de GitHub; en un
+   repo público funcionan gratis.
 3. En **Settings → Secrets and variables → Actions → Variables**, crea `AWS_ROLE_ARN`,
    `CFN_ROLE_ARN` y `SAM_S3_BUCKET` con los outputs del paso 1, y opcionalmente `ALERT_EMAIL`.
    No son secretos: un ARN no da acceso por sí solo.
