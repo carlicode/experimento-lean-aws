@@ -66,7 +66,10 @@ python3 scripts/servidor_local.py
 
 Abre http://localhost:8000 (formulario) y http://localhost:8000/resultados.html (dashboard).
 
-Tests y lint (cubren las APIs del experimento y del MVP, sin tocar AWS):
+Tests y lint (cubren las APIs del experimento y del MVP, sin tocar AWS).
+Los tests simulan DynamoDB con [moto](https://github.com/getmoto/moto), que sí valida
+las `ConditionExpression`/`UpdateExpression` que usamos para el voto único y la
+decisión única; una tabla falsa casera no lo haría:
 
 ```bash
 make install   # crea .venv e instala requirements-dev.txt

@@ -41,6 +41,12 @@ Tareas:
 **Hecho cuando:** `make lint test` pasa y los tests cubren todas las rutas de ambas APIs.
 **Necesito de ti:** nada.
 
+Decisión que tomamos al implementarlo: los tests usan **moto** en lugar de la tabla
+falsa de `scripts/servidor_local.py`, porque moto valida de verdad las
+`ConditionExpression` y `UpdateExpression` de DynamoDB (un voto por alias, una sola
+decisión, visitas deduplicadas). La tabla falsa de los servidores locales sigue sin
+tests: solo existe para el ensayo local.
+
 ## Sprint 2 · CI/CD con GitHub Actions + OIDC
 
 **Objetivo:** validación automática en cada PR y deploy sin credenciales guardadas (es una gran historia para contar en una charla de AWS).
