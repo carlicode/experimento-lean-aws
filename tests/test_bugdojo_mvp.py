@@ -1,9 +1,9 @@
 """Tests de la API del MVP de BugDojo (bugdojo-mvp/src/app.py)."""
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
-from conftest import llamar
+from conftest import llamar, tabla_con_paginas
 
 
 def nuevo_uid():
@@ -82,7 +82,7 @@ def test_hoy_usa_hora_de_bolivia(mvp, monkeypatch):
     class Reloj(datetime):
         @classmethod
         def now(cls, tz=None):
-            return datetime(2026, 10, 22, 2, 0, tzinfo=timezone.utc).astimezone(tz)
+            return datetime(2026, 10, 22, 2, 0, tzinfo=UTC).astimezone(tz)
 
     monkeypatch.setattr(mvp, "datetime", Reloj)
     assert mvp.hoy() == "2026-10-21"
@@ -181,3 +181,15 @@ def test_body_que_no_es_objeto_json(mvp, crudo):
 
 def test_ruta_desconocida(mvp):
     assert llamar(mvp, "POST /api/otra", {}) == (404, {"error": "no_encontrado"})
+
+# ---------- paginación del scan ----------
+
+def test_metricas_recorre_todas_las_paginas(mvp, monkeypatch):
+    uids = [nuevo_uid() for _ in range(5)]
+    for uid in uids:
+        visitar(mvp, monkeypatch, uid, "2026-10-22")
+    evento(mvp, uids[0], "armado", reto="1")
+    monkeypatch.setattr(mvp, "tabla", tabla_con_paginas(mvp.tabla))
+    datos = metricas(mvp)
+    assert datos["usuarios"] == 5
+    assert datos["activados"] == 1

@@ -1,6 +1,7 @@
 """Tests de la API del experimento en vivo (src/app.py)."""
 import pytest
-from conftest import llamar
+from botocore.exceptions import ClientError
+from conftest import llamar, tabla_con_paginas
 
 A6 = ["A"] * 6 + ["B"] * 4
 B6 = ["B"] * 6 + ["A"] * 4
@@ -162,3 +163,41 @@ def test_ruta_desconocida(experimento):
 def test_respuestas_no_se_cachean(experimento):
     res = experimento.handler({"routeKey": "GET /api/resultados"}, None)
     assert res["headers"]["Cache-Control"] == "no-store"
+
+# ---------- paginación del scan y errores inesperados ----------
+
+def test_resultados_recorre_todas_las_paginas(experimento, monkeypatch):
+    for alias in ("ana", "beto", "carla", "dora"):
+        responder(experimento, alias, A6)
+    for alias in ("emma", "fede", "gabi"):
+        responder(experimento, alias, B6)
+    decidir(experimento, "ana", "si")
+    monkeypatch.setattr(experimento, "tabla", tabla_con_paginas(experimento.tabla))
+    datos = resultados(experimento)
+    assert datos["total"] == 7
+    assert datos["grupos"]["A"]["participantes"] == 4
+    assert datos["grupos"]["A"]["si"] == 1
+    assert datos["grupos"]["B"]["participantes"] == 3
+
+
+def _error_de_aws():
+    return ClientError(
+        {"Error": {"Code": "InternalServerError", "Message": "boom"}}, "Operacion"
+    )
+
+
+def test_error_inesperado_al_guardar_respuesta(experimento, monkeypatch):
+    def falla(**kwargs):
+        raise _error_de_aws()
+    monkeypatch.setattr(experimento.tabla, "put_item", falla)
+    with pytest.raises(ClientError):
+        responder(experimento, "carla")
+
+
+def test_error_inesperado_al_guardar_decision(experimento, monkeypatch):
+    responder(experimento, "carla")
+    def falla(**kwargs):
+        raise _error_de_aws()
+    monkeypatch.setattr(experimento.tabla, "update_item", falla)
+    with pytest.raises(ClientError):
+        decidir(experimento, "carla", "si")

@@ -32,6 +32,8 @@ def credenciales_falsas(monkeypatch):
         "TABLA": "tabla-tests",
     }.items():
         monkeypatch.setenv(var, valor)
+    # Un perfil de AWS real no debe interferir con las credenciales de prueba.
+    monkeypatch.delenv("AWS_PROFILE", raising=False)
 
 
 def _tabla(clave):
@@ -57,6 +59,22 @@ def mvp():
     with mock_aws():
         _tabla([("uid", "HASH"), ("sk", "RANGE")])
         yield _cargar("app_mvp", RAIZ / "bugdojo-mvp" / "src" / "app.py")
+
+
+class tabla_con_paginas:
+    """Envuelve una tabla de DynamoDB para que scan devuelva páginas de 1 ítem.
+
+    Así probamos el bucle de LastEvaluatedKey sin sembrar cientos de ítems.
+    """
+
+    def __init__(self, tabla):
+        self._tabla = tabla
+
+    def scan(self, **kwargs):
+        return self._tabla.scan(Limit=1, **kwargs)
+
+    def __getattr__(self, nombre):
+        return getattr(self._tabla, nombre)
 
 
 def llamar(app, ruta, cuerpo=None, *, crudo=None):
