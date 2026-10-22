@@ -46,6 +46,8 @@ web/                     Sitio estático (HTML/CSS/JS sin frameworks)
   focusaurio.html        Landing B
   gracias.html           "Era un experimento, no se cobró nada"
   resultados.html        Dashboard en vivo (?demo = modo sin internet)
+tests/                   Tests de ambas APIs (pytest + DynamoDB simulado con moto)
+docs/PLAN_SPRINTS.md     Plan de mejoras por sprints
 scripts/
   deploy.sh              Despliega y sube el sitio
   reset.sh               Borra todas las respuestas
@@ -63,6 +65,16 @@ python3 scripts/servidor_local.py
 ```
 
 Abre http://localhost:8000 (formulario) y http://localhost:8000/resultados.html (dashboard).
+
+Tests y lint (cubren las APIs del experimento y del MVP, sin tocar AWS):
+
+```bash
+make install   # crea .venv e instala requirements-dev.txt
+make test      # pytest
+make lint      # ruff
+```
+
+`make local` y `make local-mvp` levantan los dos servidores de ensayo.
 
 Desplegar en AWS (la alerta de presupuesto es opcional):
 
