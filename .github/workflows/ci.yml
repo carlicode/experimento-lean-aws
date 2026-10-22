@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Lint y tests (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"   # el mismo runtime que Lambda
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest
+
+  infra:
+    name: Templates (cfn-lint + sam validate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cfn-lint
+      - run: cfn-lint template.yaml bugdojo-mvp/template.yaml infra/*.yaml
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+      # sam validate --lint no necesita credenciales de AWS
+      - run: sam validate --lint --region us-east-1 --template template.yaml
+      - run: sam validate --lint --region us-east-1 --template bugdojo-mvp/template.yaml

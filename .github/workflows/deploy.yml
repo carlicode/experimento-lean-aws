@@ -1,0 +1,51 @@
+name: Deploy
+
+# Manual: Actions → Deploy → Run workflow → elegir el stack.
+on:
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: Stack a desplegar
+        type: choice
+        options: [experimento-lean, bugdojo-mvp]
+        required: true
+
+permissions:
+  contents: read
+  id-token: write   # para pedir el token OIDC a GitHub
+
+concurrency:
+  group: deploy-${{ inputs.stack }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.stack }}
+    runs-on: ubuntu-latest
+    environment: produccion   # con aprobación manual (ver README)
+    env:
+      DIR: ${{ inputs.stack == 'bugdojo-mvp' && 'bugdojo-mvp' || '.' }}
+      SAM_S3_BUCKET: ${{ vars.SAM_S3_BUCKET }}
+      CFN_ROLE_ARN: ${{ vars.CFN_ROLE_ARN }}
+      ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tests antes de desplegar
+        run: |
+          pip install -r requirements-dev.txt
+          ruff check .
+          pytest
+      - name: Credenciales temporales de AWS (OIDC, sin access keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+      - name: Deploy
+        working-directory: ${{ env.DIR }}
+        run: ./scripts/deploy.sh

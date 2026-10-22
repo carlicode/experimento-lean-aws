@@ -1,0 +1,178 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Deploy desde GitHub Actions sin access keys. GitHub pide un token OIDC de corta
+  duración, AWS lo valida y entrega credenciales temporales solo a este repo y
+  solo a jobs que corren en el environment indicado. Se despliega una sola vez.
+
+Parameters:
+  Repositorio:
+    Type: String
+    Default: carlicode/experimento-lean-aws
+    Description: owner/repo de GitHub que puede asumir el rol
+  Environment:
+    Type: String
+    Default: produccion
+    Description: GitHub Environment (con aprobación) desde el que se puede desplegar
+  ProveedorOidcArn:
+    Type: String
+    Default: ""
+    Description: >
+      ARN de un proveedor OIDC de GitHub que ya exista en la cuenta (solo puede
+      haber uno por cuenta). Vacío = crearlo aquí.
+
+Conditions:
+  CrearProveedor: !Equals [!Ref ProveedorOidcArn, ""]
+
+Resources:
+  ProveedorGitHub:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CrearProveedor
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+
+  # Bucket para los artefactos de SAM (el zip de cada Lambda). Se crea aquí para
+  # que el rol de GitHub solo tenga acceso a este bucket y no a resolve_s3.
+  Artefactos:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: borrar-artefactos-viejos
+            Status: Enabled
+            ExpirationInDays: 30
+
+  # Rol que usa CloudFormation para crear los recursos de los stacks. GitHub no
+  # tiene estos permisos: solo puede pedirle a CloudFormation que use este rol.
+  RolCloudFormation:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: cloudformation.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: recursos-de-los-stacks
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Solo los servicios que usan template.yaml y bugdojo-mvp/template.yaml
+              - Effect: Allow
+                Action:
+                  - apigateway:*
+                  - budgets:*
+                  - cloudfront:*
+                  - dynamodb:*
+                  - lambda:*
+                  - logs:*
+                  - s3:*
+                Resource: "*"
+              # Los roles de las Lambdas, y solo los de estos dos stacks
+              - Effect: Allow
+                Action:
+                  - iam:AttachRolePolicy
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:DeleteRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:GetRole
+                  - iam:GetRolePolicy
+                  - iam:PassRole
+                  - iam:PutRolePolicy
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:UpdateAssumeRolePolicy
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/experimento-lean-*
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/bugdojo-mvp-*
+
+  RolGitHub:
+    Type: AWS::IAM::Role
+    Properties:
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !If [CrearProveedor, !Ref ProveedorGitHub, !Ref ProveedorOidcArn]
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                # Ni otra rama, ni un PR, ni un fork: solo jobs del environment
+                token.actions.githubusercontent.com:sub: !Sub repo:${Repositorio}:environment:${Environment}
+      Policies:
+        - PolicyName: desplegar-stacks
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CloudFormationSoloEstosStacks
+                Effect: Allow
+                Action:
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStacks
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:GetTemplate
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:ListStackResources
+                Resource:
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/experimento-lean/*
+                  - !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/bugdojo-mvp/*
+              - Sid: TransformDeSam
+                Effect: Allow
+                Action: cloudformation:CreateChangeSet
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
+              - Sid: UsarElRolDeCloudFormation
+                Effect: Allow
+                Action: iam:PassRole
+                Resource: !GetAtt RolCloudFormation.Arn
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: cloudformation.amazonaws.com
+              - Sid: SubirArtefactos
+                Effect: Allow
+                Action: [s3:GetObject, s3:PutObject]
+                Resource: !Sub ${Artefactos.Arn}/*
+              - Sid: ListarArtefactos
+                Effect: Allow
+                Action: [s3:ListBucket, s3:GetBucketLocation]
+                Resource: !GetAtt Artefactos.Arn
+              # CloudFormation nombra los buckets <stack>-sitio-<aleatorio>
+              - Sid: SincronizarSitios
+                Effect: Allow
+                Action: [s3:ListBucket]
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::experimento-lean-sitio-*
+                  - !Sub arn:${AWS::Partition}:s3:::bugdojo-mvp-sitio-*
+              - Sid: SincronizarArchivosDeLosSitios
+                Effect: Allow
+                Action: [s3:GetObject, s3:PutObject, s3:DeleteObject]
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::experimento-lean-sitio-*/*
+                  - !Sub arn:${AWS::Partition}:s3:::bugdojo-mvp-sitio-*/*
+              - Sid: InvalidarCache
+                Effect: Allow
+                Action: cloudfront:CreateInvalidation
+                Resource: !Sub arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/*
+
+Outputs:
+  RolGitHubArn:
+    Description: Variable AWS_ROLE_ARN del repo
+    Value: !GetAtt RolGitHub.Arn
+  RolCloudFormationArn:
+    Description: Variable CFN_ROLE_ARN del repo
+    Value: !GetAtt RolCloudFormation.Arn
+  BucketArtefactos:
+    Description: Variable SAM_S3_BUCKET del repo
+    Value: !Ref Artefactos
