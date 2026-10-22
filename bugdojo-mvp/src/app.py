@@ -37,6 +37,15 @@ def respuesta(status, cuerpo):
     }
 
 
+def leer_cuerpo(event):
+    """Devuelve el body como dict, o None si no es un objeto JSON válido."""
+    try:
+        cuerpo = json.loads(event.get("body") or "{}")
+    except json.JSONDecodeError:
+        return None
+    return cuerpo if isinstance(cuerpo, dict) else None
+
+
 def hoy():
     return datetime.now(BOLIVIA).strftime("%Y-%m-%d")
 
@@ -89,8 +98,8 @@ def metricas():
 
     dias, activados, feedback = {}, set(), {"si": 0, "no": 0}
     fase_por_reto = {r: {f: set() for f in FASES} for r in RETOS}   # usuarios únicos
-    usuarios_lang = {l: set() for l in LENGUAJES}
-    armaron_lang = {l: set() for l in LENGUAJES}
+    usuarios_lang = {lang: set() for lang in LENGUAJES}
+    armaron_lang = {lang: set() for lang in LENGUAJES}
     for i in items:
         uid, sk = i["uid"], i["sk"]
         dias.setdefault(uid, set())
@@ -134,7 +143,8 @@ def metricas():
         "veredictos": {"activacion": v_act, "retencion": v_ret},
         "decision": decision,
         "por_reto": por_reto,
-        "lenguajes": {l: {"usuarios": len(usuarios_lang[l]), "armaron": len(armaron_lang[l])} for l in LENGUAJES},
+        "lenguajes": {lang: {"usuarios": len(usuarios_lang[lang]), "armaron": len(armaron_lang[lang])}
+                      for lang in LENGUAJES},
         "feedback": feedback,
     })
 
@@ -144,9 +154,8 @@ def handler(event, _context):
     if ruta == "GET /api/metricas":
         return metricas()
     if ruta == "POST /api/evento":
-        try:
-            cuerpo = json.loads(event.get("body") or "{}")
-        except json.JSONDecodeError:
+        cuerpo = leer_cuerpo(event)
+        if cuerpo is None:
             return respuesta(400, {"error": "json_invalido"})
         return registrar_evento(cuerpo)
     return respuesta(404, {"error": "no_encontrado"})
