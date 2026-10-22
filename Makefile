@@ -14,6 +14,7 @@ test:  ## Corre los tests de ambas APIs
 
 lint:  ## Revisa estilo y errores comunes
 	$(PY) -m ruff check .
+	$(VENV)/bin/cfn-lint template.yaml bugdojo-mvp/template.yaml infra/*.yaml
 
 format:  ## Corrige automáticamente lo que ruff puede arreglar
 	$(PY) -m ruff check . --fix

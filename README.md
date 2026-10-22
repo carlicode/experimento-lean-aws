@@ -79,7 +79,7 @@ decisión única; una tabla falsa casera no lo haría:
 ```bash
 make install   # crea .venv e instala requirements-dev.txt
 make test      # pytest
-make lint      # ruff
+make lint      # ruff + cfn-lint
 ```
 
 `make local` y `make local-mvp` levantan los dos servidores de ensayo.
