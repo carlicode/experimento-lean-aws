@@ -31,10 +31,18 @@ def respuesta(status, cuerpo):
 
 
 def leer_cuerpo(event):
+    """Devuelve el body como dict, o None si no es un objeto JSON válido."""
     try:
-        return json.loads(event.get("body") or "{}")
+        cuerpo = json.loads(event.get("body") or "{}")
     except json.JSONDecodeError:
         return None
+    return cuerpo if isinstance(cuerpo, dict) else None
+
+
+def leer_alias(cuerpo):
+    """Alias limpio, o "" si no es texto (así null no se convierte en "None")."""
+    alias = cuerpo.get("alias")
+    return alias.strip() if isinstance(alias, str) else ""
 
 
 def calcular_grupo(respuestas):
@@ -47,7 +55,7 @@ def calcular_grupo(respuestas):
 
 
 def guardar_respuesta(cuerpo):
-    alias = str(cuerpo.get("alias", "")).strip()
+    alias = leer_alias(cuerpo)
     respuestas = cuerpo.get("respuestas")
     if not ALIAS_RE.fullmatch(alias):
         return respuesta(400, {"error": "alias_invalido"})
@@ -71,7 +79,7 @@ def guardar_respuesta(cuerpo):
 
 
 def guardar_decision(cuerpo):
-    alias = str(cuerpo.get("alias", "")).strip()
+    alias = leer_alias(cuerpo)
     decision = cuerpo.get("decision")
     motivo = cuerpo.get("motivo")
     if not ALIAS_RE.fullmatch(alias) or decision not in ("si", "no"):

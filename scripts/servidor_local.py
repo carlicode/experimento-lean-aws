@@ -4,7 +4,6 @@
 
 Reutiliza la misma lógica de src/app.py, con una tabla falsa en memoria.
 """
-import json
 import os
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -64,7 +63,7 @@ def _envolver(fn):
         try:
             return fn(*a, **k)
         except ErrorCondicional:
-            raise ClientError("ConditionalCheckFailedException")
+            raise ClientError("ConditionalCheckFailedException") from None
     return interno
 
 
