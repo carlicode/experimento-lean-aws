@@ -98,7 +98,9 @@ El deploy es manual: **Actions → Deploy → Run workflow** y eliges `experimen
 ¿Por qué OIDC? En lugar de guardar una access key en GitHub (que no vence y sirve desde
 cualquier lado), GitHub le pide a AWS credenciales temporales para cada job. AWS solo se las da
 si el token dice que viene de este repo **y** del environment `produccion`, que pide aprobación.
-Un PR o un fork no pueden asumir el rol.
+Un PR o un fork no pueden asumir el rol porque nunca corren en ese environment,
+y que solo `main` pueda desplegar depende del ajuste *Deployment branches* del
+environment (paso 2).
 
 Además separamos dos roles: el de GitHub solo puede pedirle a CloudFormation que despliegue
 estos dos stacks, subir el sitio e invalidar la caché; los permisos para crear recursos los tiene
@@ -111,9 +113,9 @@ Se configura una sola vez:
 
    ```bash
    aws cloudformation deploy --region us-east-1 \
-     --template-file infra/github-oidc.yaml --stack-name experimento-lean-github \
+     --template-file infra/github-oidc.yaml --stack-name github-oidc-experimento \
      --capabilities CAPABILITY_IAM
-   aws cloudformation describe-stacks --region us-east-1 --stack-name experimento-lean-github \
+   aws cloudformation describe-stacks --region us-east-1 --stack-name github-oidc-experimento \
      --query "Stacks[0].Outputs" --output table
    ```
 

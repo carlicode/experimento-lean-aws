@@ -63,28 +63,54 @@ Resources:
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
-              # Solo los servicios que usan template.yaml y bugdojo-mvp/template.yaml
-              - Effect: Allow
+              # Solo los servicios que usan template.yaml y bugdojo-mvp/template.yaml.
+              # Acotamos por nombre donde CloudFormation genera nombres predecibles
+              # (<stack>-<Recurso>-<aleatorio>). CloudFront, API Gateway y Budgets no
+              # tienen nombre propio, así que quedan en "*".
+              - Sid: ServiciosSinNombre
+                Effect: Allow
                 Action:
                   - apigateway:*
                   - budgets:*
                   - cloudfront:*
-                  - dynamodb:*
-                  - lambda:*
-                  - logs:*
-                  - s3:*
                 Resource: "*"
-              # Los roles de las Lambdas, y solo los de estos dos stacks
-              - Effect: Allow
+              - Sid: TablasDeLosStacks
+                Effect: Allow
+                Action: dynamodb:*
+                Resource:
+                  - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/experimento-lean-*
+                  - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/bugdojo-mvp-*
+              - Sid: LambdasDeLosStacks
+                Effect: Allow
+                Action: lambda:*
+                Resource:
+                  - !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:experimento-lean-*
+                  - !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:bugdojo-mvp-*
+              - Sid: LogsDeLasLambdas
+                Effect: Allow
+                Action: logs:*
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/experimento-lean-*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/experimento-lean-*:*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bugdojo-mvp-*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bugdojo-mvp-*:*
+              - Sid: BucketsDeLosSitios
+                Effect: Allow
+                Action: s3:*
+                Resource:
+                  - arn:aws:s3:::experimento-lean-*
+                  - arn:aws:s3:::experimento-lean-*/*
+                  - arn:aws:s3:::bugdojo-mvp-*
+                  - arn:aws:s3:::bugdojo-mvp-*/*
+              # Los roles de las Lambdas, y solo los de estos dos stacks.
+              - Sid: RolesDeLasLambdas
+                Effect: Allow
                 Action:
-                  - iam:AttachRolePolicy
                   - iam:CreateRole
                   - iam:DeleteRole
                   - iam:DeleteRolePolicy
-                  - iam:DetachRolePolicy
                   - iam:GetRole
                   - iam:GetRolePolicy
-                  - iam:PassRole
                   - iam:PutRolePolicy
                   - iam:TagRole
                   - iam:UntagRole
@@ -92,6 +118,35 @@ Resources:
                 Resource:
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/experimento-lean-*
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/bugdojo-mvp-*
+              # SAM solo les adjunta una política administrada (AWSLambdaBasicExecutionRole,
+              # verificado traduciendo los templates con samtranslator); DynamoDBCrudPolicy
+              # termina como política inline, no administrada.
+              - Sid: AdjuntarSoloLaPoliticaBasicaDeLambda
+                Effect: Allow
+                Action:
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/experimento-lean-*
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/bugdojo-mvp-*
+                Condition:
+                  ArnEquals:
+                    iam:PolicyARN: arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+              - Sid: PasarRolesSoloALambda
+                Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/experimento-lean-*
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/bugdojo-mvp-*
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: lambda.amazonaws.com
+              # Este stack (el del OIDC) también crea roles: que CloudFormation no
+              # pueda tocarlos aunque el stack se llame como los demás.
+              - Sid: NoTocarLosRolesDeEsteStack
+                Effect: Deny
+                Action: iam:*
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${AWS::StackName}-*
 
   RolGitHub:
     Type: AWS::IAM::Role
@@ -107,7 +162,10 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                # Ni otra rama, ni un PR, ni un fork: solo jobs del environment
+                # El sub de un environment no menciona la rama: que solo main pueda
+                # desplegar depende del ajuste "Deployment branches = main" del
+                # environment en GitHub (ver README). Un PR o un fork nunca corren
+                # en este environment, así que tampoco pueden asumir el rol.
                 token.actions.githubusercontent.com:sub: !Sub repo:${Repositorio}:environment:${Environment}
       Policies:
         - PolicyName: desplegar-stacks
