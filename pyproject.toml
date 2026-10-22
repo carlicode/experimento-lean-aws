@@ -2,7 +2,7 @@
 name = "experimento-lean-aws"
 version = "0.1.0"
 description = "Experimento Lean en vivo en AWS: BugDojo vs Focusaurio + MVP de BugDojo"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -11,7 +11,7 @@ addopts = "-q"
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
