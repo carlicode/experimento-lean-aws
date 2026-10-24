@@ -11,6 +11,12 @@ function nuevoUid() {
 
 let memoria = {}; // por si el navegador bloquea localStorage
 
+// ?reiniciar=1 borra el estado de este navegador: vuelve a contar como persona nueva.
+if (new URLSearchParams(location.search).has("reiniciar")) {
+  try { localStorage.removeItem(CLAVE); } catch {}
+  history.replaceState(null, "", location.pathname);
+}
+
 const estado = {
   leer() {
     try { return JSON.parse(localStorage.getItem(CLAVE)) || memoria; } catch { return memoria; }
@@ -57,6 +63,7 @@ function marcar(id, fase, lang = "js") {
   if (todo[k] && todo[k][fase]) return;
   estado.guardar({ progreso: { ...todo, [k]: { ...(todo[k] || {}), [fase]: true } } });
   evento(fase, { reto: id, lang });
+  avisoEarlyAccess();
 }
 
 function guardarEn(coleccion, id, valor, lang = "js") {
@@ -78,5 +85,83 @@ function evento(tipo, extra = {}) {
   }).catch(() => {});
 }
 
+// ---------- Early access: aviso amarillo desde que completa su primera fase ----------
+const NOMBRE_EARLY = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{2,20}( [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]\.){1,3}$/;
+
+// "carla marquez f" → "Carla M. F.": del resto de palabras solo guardamos la inicial.
+function normalizarNombre(texto) {
+  const [nombre = "", ...resto] = texto.trim().split(/\s+/);
+  const inicial = (p) => p.charAt(0).toUpperCase() + ".";
+  return [nombre.charAt(0).toUpperCase() + nombre.slice(1).toLowerCase(), ...resto.map(inicial)].join(" ");
+}
+
+function fasesCompletadas() {
+  return Object.values(estado.leer().progreso || {})
+    .reduce((n, p) => n + FASES.filter((f) => p[f]).length, 0);
+}
+
+function avisoEarlyAccess() {
+  const e = estado.leer();
+  const hechas = fasesCompletadas();
+  if (e.inscrito || hechas === 0 || hechas <= (e.earlyCerrado || 0) || document.getElementById("early")) return;
+
+  const caja = document.createElement("aside");
+  caja.id = "early";
+  caja.className = "early";
+  caja.innerHTML = `
+    <button class="early-cerrar" aria-label="Cerrar">${icono("x")}</button>
+    <button class="early-abrir">${icono("sparkles")}Inscribirme al early access</button>
+    <form class="early-form" hidden>
+      <label for="early-nombre">Tu nombre y la inicial de tu otro nombre o apellido</label>
+      <div class="early-fila">
+        <input id="early-nombre" maxlength="40" placeholder="Carla M." autocomplete="off" required>
+        <button class="btn sm" type="submit">Inscribirme</button>
+      </div>
+      <p class="early-err" hidden></p>
+    </form>`;
+  document.body.append(caja);
+  document.body.classList.add("con-early");
+
+  const form = caja.querySelector("form");
+  const input = caja.querySelector("input");
+  const boton = form.querySelector("button");
+  const err = caja.querySelector(".early-err");
+  const cerrar = () => { caja.remove(); document.body.classList.remove("con-early"); };
+  const error = (msg) => { err.textContent = msg; err.hidden = false; };
+  input.addEventListener("input", () => { err.hidden = true; });
+
+  // Si la cierra, vuelve a aparecer cuando complete otra fase.
+  caja.querySelector(".early-cerrar").addEventListener("click", () => {
+    estado.guardar({ earlyCerrado: fasesCompletadas() });
+    cerrar();
+  });
+  caja.querySelector(".early-abrir").addEventListener("click", (ev) => {
+    ev.currentTarget.hidden = true;
+    form.hidden = false;
+    input.focus();
+  });
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const nombre = normalizarNombre(input.value);
+    if (!NOMBRE_EARLY.test(nombre)) return error("Escribe tu nombre y una inicial. Ejemplo: Carla M.");
+    boton.disabled = true;
+    try {
+      const r = await fetch("/api/evento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: uid(), tipo: "inscripcion", nombre }),
+      });
+      if (!r.ok) throw new Error(String(r.status));
+      estado.guardar({ inscrito: nombre });
+      caja.innerHTML = `<p class="early-ok">${icono("circle-check")}¡Listo, ${escapar(nombre)}! Quedaste en la lista del early access.</p>`;
+      setTimeout(cerrar, 4000);
+    } catch {
+      boton.disabled = false;
+      error("No pudimos inscribirte. Revisa tu conexión e inténtalo otra vez.");
+    }
+  });
+}
+
 // Cada página cuenta como visita del día (el servidor la deduplica por día).
 evento("visita");
+avisoEarlyAccess();

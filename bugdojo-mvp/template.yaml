@@ -9,6 +9,11 @@ Parameters:
     Type: String
     Default: ""
     Description: Correo para la alerta de presupuesto (opcional). Vacío = sin alerta.
+  ClaveReinicio:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: Clave del botón "Reiniciar datos" del dashboard (mínimo 8 caracteres). Vacío = desactivado.
 
 Conditions:
   HasEmail: !Not [!Equals [!Ref AlertEmail, ""]]
@@ -53,6 +58,7 @@ Resources:
       Environment:
         Variables:
           TABLA: !Ref Tabla
+          CLAVE_REINICIO: !Ref ClaveReinicio
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref Tabla
@@ -69,6 +75,12 @@ Resources:
             ApiId: !Ref Api
             Path: /api/metricas
             Method: GET
+        Reiniciar:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /api/reiniciar
+            Method: POST
 
   FuncionLogs:
     Type: AWS::Logs::LogGroup

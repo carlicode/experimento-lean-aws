@@ -46,6 +46,7 @@ jobs:
       SAM_S3_BUCKET: ${{ vars.SAM_S3_BUCKET }}
       CFN_ROLE_ARN: ${{ vars.CFN_ROLE_ARN }}
       ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+      CLAVE_REINICIO: ${{ inputs.stack == 'bugdojo-mvp' && secrets.CLAVE_REINICIO || '' }}   # botón "Reiniciar datos"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Credenciales temporales de AWS (OIDC, sin access keys)

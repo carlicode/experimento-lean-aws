@@ -3,11 +3,13 @@
 No hay cuentas, correos ni pagos. Cada navegador tiene un uid aleatorio.
 
 Rutas (HTTP API, detrás de CloudFront en /api/*):
-  POST /api/evento    {uid, tipo, reto?, lang?, valor?}
-                      tipo: visita | aprendido | armado | intento | resuelto | feedback
+  POST /api/evento    {uid, tipo, reto?, lang?, valor?, nombre?}
+                      tipo: visita | aprendido | armado | intento | resuelto | feedback | inscripcion
                       lang: js (por defecto) | py
-  GET  /api/metricas  -> solo totales agregados
+  GET  /api/metricas  -> solo totales agregados (nunca nombres)
+  POST /api/reiniciar {clave} -> borra todos los datos si la clave coincide con CLAVE_REINICIO
 """
+import hmac
 import json
 import os
 import re
@@ -22,9 +24,12 @@ RETOS = {"1", "2", "3", "4", "5"}
 BOLIVIA = timezone(timedelta(hours=-4))
 FASES = ("aprendido", "armado", "resuelto")  # Aprende → Arma → Escribe
 LENGUAJES = ("js", "py")
+# Early access: nombre + iniciales ("Carla M." o "Carla M. F."), nada más.
+NOMBRE_RE = re.compile(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{2,20}( [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]\.?){1,3}")
+LARGO_MINIMO_CLAVE = 8   # con una clave más corta, el reinicio queda desactivado
 
 # Hipótesis del MVP (se definen antes de ver datos)
-META_ACTIVACION = 0.40   # arman al menos 1 programa
+META_ACTIVACION = 0.40   # completan la fase Aprende (3 preguntas) de al menos 1 reto
 META_RETENCION = 0.20    # vuelven otro día
 MINIMO_USUARIOS = 10
 
@@ -76,6 +81,11 @@ def registrar_evento(cuerpo):
         if valor not in ("si", "no"):
             return respuesta(400, {"error": "valor_invalido"})
         tabla.put_item(Item={"uid": uid, "sk": "feedback", "valor": valor})
+    elif tipo == "inscripcion":
+        nombre = " ".join(str(cuerpo.get("nombre", "")).split())
+        if not NOMBRE_RE.fullmatch(nombre):
+            return respuesta(400, {"error": "nombre_invalido"})
+        tabla.put_item(Item={"uid": uid, "sk": "inscripcion", "nombre": nombre})
     else:
         return respuesta(400, {"error": "tipo_invalido"})
     return respuesta(200, {"ok": True})
@@ -88,15 +98,8 @@ def veredicto(valor, meta, usuarios):
 
 
 def metricas():
-    items, kwargs = [], {}
-    while True:
-        pagina = tabla.scan(**kwargs)
-        items.extend(pagina["Items"])
-        if "LastEvaluatedKey" not in pagina:
-            break
-        kwargs["ExclusiveStartKey"] = pagina["LastEvaluatedKey"]
-
-    dias, activados, feedback = {}, set(), {"si": 0, "no": 0}
+    items = todos_los_items()
+    dias, activados, feedback, inscritos = {}, set(), {"si": 0, "no": 0}, 0
     fase_por_reto = {r: {f: set() for f in FASES} for r in RETOS}   # usuarios únicos
     usuarios_lang = {lang: set() for lang in LENGUAJES}
     armaron_lang = {lang: set() for lang in LENGUAJES}
@@ -114,11 +117,14 @@ def metricas():
                 if i.get(fase):
                     fase_por_reto[r][fase].add(uid)
                     usuarios_lang[lang].add(uid)
-            if i.get("armado") or i.get("resuelto"):
+            if any(i.get(fase) for fase in FASES):
                 activados.add(uid)
+            if i.get("armado") or i.get("resuelto"):
                 armaron_lang[lang].add(uid)
         elif sk == "feedback" and i.get("valor") in feedback:
             feedback[i["valor"]] += 1
+        elif sk == "inscripcion":
+            inscritos += 1
     por_reto = {r: {"aprendieron": len(f["aprendido"]), "armaron": len(f["armado"]),
                     "escribieron": len(f["resuelto"])} for r, f in sorted(fase_por_reto.items())}
 
@@ -146,7 +152,32 @@ def metricas():
         "lenguajes": {lang: {"usuarios": len(usuarios_lang[lang]), "armaron": len(armaron_lang[lang])}
                       for lang in LENGUAJES},
         "feedback": feedback,
+        "inscritos": inscritos,
+        "inscripcion": round(inscritos / usuarios, 4) if usuarios else 0,
     })
+
+
+def todos_los_items():
+    items, kwargs = [], {}
+    while True:
+        pagina = tabla.scan(**kwargs)
+        items.extend(pagina["Items"])
+        if "LastEvaluatedKey" not in pagina:
+            return items
+        kwargs["ExclusiveStartKey"] = pagina["LastEvaluatedKey"]
+
+
+def reiniciar(cuerpo):
+    """Borra todos los eventos. Solo con la clave configurada en el deploy."""
+    esperada = os.environ.get("CLAVE_REINICIO", "")
+    if len(esperada) < LARGO_MINIMO_CLAVE:
+        return respuesta(403, {"error": "reinicio_desactivado"})
+    if not hmac.compare_digest(str(cuerpo.get("clave", "")).encode(), esperada.encode()):
+        return respuesta(403, {"error": "clave_invalida"})
+    items = todos_los_items()
+    for i in items:
+        tabla.delete_item(Key={"uid": i["uid"], "sk": i["sk"]})
+    return respuesta(200, {"ok": True, "borrados": len(items)})
 
 
 def handler(event, _context):
@@ -158,4 +189,9 @@ def handler(event, _context):
         if cuerpo is None:
             return respuesta(400, {"error": "json_invalido"})
         return registrar_evento(cuerpo)
+    if ruta == "POST /api/reiniciar":
+        cuerpo = leer_cuerpo(event)
+        if cuerpo is None:
+            return respuesta(400, {"error": "json_invalido"})
+        return reiniciar(cuerpo)
     return respuesta(404, {"error": "no_encontrado"})

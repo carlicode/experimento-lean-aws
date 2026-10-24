@@ -2,6 +2,7 @@
 # Despliega la infraestructura (SAM) y sube el sitio. Uso:
 #   ./scripts/deploy.sh                      # sin alerta de presupuesto
 #   ALERT_EMAIL=tu@correo.com ./scripts/deploy.sh
+#   CLAVE_REINICIO=una-clave-larga ./scripts/deploy.sh   # activa "Reiniciar datos"
 # En CI también lee SAM_S3_BUCKET y CFN_ROLE_ARN (opcionales).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -11,8 +12,15 @@ REGION="us-east-1"
 
 echo "→ Desplegando infraestructura con SAM…"
 ARGS=()
+PARAMS=()
 if [ -n "${ALERT_EMAIL:-}" ]; then
-  ARGS+=(--parameter-overrides "AlertEmail=$ALERT_EMAIL")
+  PARAMS+=("AlertEmail=$ALERT_EMAIL")
+fi
+if [ -n "${CLAVE_REINICIO:-}" ]; then
+  PARAMS+=("ClaveReinicio=$CLAVE_REINICIO")
+fi
+if [ ${#PARAMS[@]} -gt 0 ]; then
+  ARGS+=(--parameter-overrides "${PARAMS[@]}")
 fi
 # Desde GitHub Actions (ver infra/github-oidc.yaml): bucket de artefactos propio
 # y CloudFormation crea los recursos con su rol, no con el de GitHub.

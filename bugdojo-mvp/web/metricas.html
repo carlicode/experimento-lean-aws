@@ -13,8 +13,11 @@
     .decision { font-weight: 900; letter-spacing: .08em; font-size: clamp(1.1rem, 2vw, 1.7rem); padding: 12px 24px; border-radius: 99px; background: var(--soft); color: var(--muted); }
     .decision.persevera { background: var(--vive); color: #fff; }
     .decision.pivota { background: var(--ink); color: #fff; }
-    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 28px); }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(14px, 2vw, 28px); }
+    @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 800px) { .kpis { grid-template-columns: 1fr; } }
+    .kpi.kpi-early { background: #fef9c3; border-color: #facc15; }
+    .lado { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
     .kpi { border: 2px solid var(--line); border-radius: 24px; padding: clamp(18px, 2.6vh, 30px); display: flex; flex-direction: column; gap: 10px; }
     .kpi.cumple { border-color: var(--vive); }
     .kpi .nombre { font-weight: 900; font-size: clamp(1.1rem, 1.6vw, 1.5rem); }
@@ -42,7 +45,10 @@
         <p class="sub"><i data-icono="code-xml"></i> BugDojo · MVP · etapa 2 del ciclo Lean</p>
         <h1 class="titulo grad">¿Lo usan y vuelven?</h1>
       </div>
-      <span class="decision" id="decision">FALTAN DATOS</span>
+      <div class="lado">
+        <span class="decision" id="decision">FALTAN DATOS</span>
+        <button class="btn ghost sm" id="reiniciar"><i data-icono="rotate-ccw"></i>Reiniciar datos</button>
+      </div>
     </div>
 
     <section class="kpis">
@@ -54,7 +60,7 @@
       <article class="kpi" id="kpi-act">
         <span class="nombre"><i data-icono="puzzle"></i> Activación</span>
         <span class="num" id="act">0<small>%</small></span>
-        <span class="det" id="act-det">armaron al menos 1 programa</span>
+        <span class="det" id="act-det">completaron Aprende en al menos 1 reto</span>
         <div class="track"><div class="fill" id="act-fill"></div><div class="marca" id="act-marca"><span></span></div></div>
       </article>
       <article class="kpi" id="kpi-ret">
@@ -62,6 +68,11 @@
         <span class="num" id="ret">0<small>%</small></span>
         <span class="det" id="ret-det">volvieron otro día</span>
         <div class="track"><div class="fill" id="ret-fill"></div><div class="marca" id="ret-marca"><span></span></div></div>
+      </article>
+      <article class="kpi kpi-early">
+        <span class="nombre"><i data-icono="sparkles"></i> Early access</span>
+        <span class="num" id="early">0</span>
+        <span class="det" id="early-det">se inscribieron</span>
       </article>
     </section>
 
@@ -103,7 +114,7 @@
       } catch { return; }
 
       $("usuarios").textContent = d.usuarios;
-      kpi("act", d.activacion, d.metas.activacion, d.veredictos.activacion, `${d.activados} armaron al menos 1 programa`);
+      kpi("act", d.activacion, d.metas.activacion, d.veredictos.activacion, `${d.activados} completaron Aprende (3 preguntas)`);
       kpi("ret", d.retencion, d.metas.retencion, d.veredictos.retencion, `${d.retenidos} volvieron otro día`);
       $("decision").className = "decision " + d.decision;
       $("decision").textContent = d.decision === "faltan_datos"
@@ -135,9 +146,34 @@
           <b>${x.usuarios} · ${x.armaron}</b>
         </div>`).join("") + `<div class="leyenda"><span><i style="background:#ddd6fe"></i>Probaron</span><span><i style="background:var(--dojo)"></i>Armaron un programa</span></div>`;
 
+      $("early").textContent = d.inscritos ?? 0;
+      $("early-det").textContent = `${Math.round((d.inscripcion || 0) * 100)} % de las personas se inscribieron`;
+
       const f = d.feedback;
       $("feedback").textContent = `¿Volverías mañana? Sí ${f.si} · No ${f.no}`;
     }
+
+    const ERRORES_REINICIO = {
+      clave_invalida: "Clave incorrecta. No se borró nada.",
+      reinicio_desactivado: "El reinicio está desactivado: falta configurar CLAVE_REINICIO en el deploy.",
+    };
+    $("reiniciar").addEventListener("click", async () => {
+      const clave = prompt("Clave para reiniciar los datos:");
+      if (!clave) return;
+      if (!confirm("¿Borrar TODOS los datos del experimento? No se puede deshacer.")) return;
+      let r = null, d = {};
+      try {
+        r = await fetch("/api/reiniciar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clave }),
+        });
+        d = await r.json();
+      } catch {}
+      alert(r && r.ok ? `Listo: se borraron ${d.borrados} registros.`
+        : ERRORES_REINICIO[d.error] || "No se pudo reiniciar. Revisa tu conexión.");
+      actualizar();
+    });
 
     actualizar();
     setInterval(actualizar, 5000);

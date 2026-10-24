@@ -29,12 +29,16 @@ class TablaMemoria:
         for nombre, valor in re.findall(r"SET (#\w+) = (:\w+)", UpdateExpression):
             item[ExpressionAttributeNames[nombre]] = ExpressionAttributeValues[valor]
 
+    def delete_item(self, Key):
+        self.items.pop((Key["uid"], Key["sk"]), None)
+
     def scan(self, **_kwargs):
         return {"Items": list(self.items.values())}
 
 
 tabla = TablaMemoria()
 os.environ["TABLA"] = "local"
+os.environ.setdefault("CLAVE_REINICIO", "ensayo-local-bugdojo")
 sys.modules["boto3"] = SimpleNamespace(resource=lambda _n: SimpleNamespace(Table=lambda _t: tabla))
 sys.path.insert(0, os.path.join(RAIZ, "src"))
 import app  # noqa: E402
@@ -74,4 +78,5 @@ class Manejador(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     puerto = int(os.environ.get("PORT", "8001"))
     print(f"MVP BugDojo local en http://localhost:{puerto}  (métricas: /metricas.html)")
+    print(f"Clave de \"Reiniciar datos\": {os.environ['CLAVE_REINICIO']}")
     ThreadingHTTPServer(("127.0.0.1", puerto), Manejador).serve_forever()

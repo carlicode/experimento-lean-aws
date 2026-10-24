@@ -281,6 +281,30 @@ a { color: inherit; }
 }
 .firma span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
+/* ---------- Early access ---------- */
+.early {
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 20;
+  max-width: 520px; margin: 0 auto; padding: 14px 46px 14px 16px;
+  border-radius: var(--radius); background: #facc15; color: var(--ink);
+  box-shadow: 0 18px 40px -18px rgba(15, 15, 20, .45);
+  animation: entra .35s ease both;
+}
+.early-abrir {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 4px 0;
+  font: inherit; font-size: 1.05rem; font-weight: 900; text-align: left;
+  background: none; border: 0; color: inherit; cursor: pointer;
+}
+.early-cerrar { position: absolute; top: 8px; right: 8px; padding: 6px; background: none; border: 0; color: inherit; cursor: pointer; }
+.early-form label { display: block; font-weight: 800; margin-bottom: 8px; }
+.early-fila { display: flex; gap: 8px; }
+.early-fila input {
+  flex: 1; min-width: 0; padding: 10px 12px; font: inherit; font-size: 1rem;
+  border: 2px solid var(--ink); border-radius: 12px; background: #fff;
+}
+.early-err { margin: 8px 0 0; font-weight: 700; }
+.early-ok { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 800; }
+body.con-early .wrap { padding-bottom: 200px; }
+
 /* ---------- Tablet ---------- */
 @media (min-width: 760px) {
   .controles { width: auto; }
