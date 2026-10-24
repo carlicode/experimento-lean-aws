@@ -38,7 +38,7 @@ jobs:
       # El mismo rango que requirements-dev.txt, para que ambos lados coincidan
       - run: pip install 'cfn-lint>=1,<2'
       - run: cfn-lint template.yaml bugdojo-mvp/template.yaml infra/*.yaml
-      - uses: aws-actions/setup-sam@f84ec7d548307efafe33230528756de3c5841a17 # v2
+      - uses: aws-actions/setup-sam@341eee193f458fa5aae5d52c94b0c5cf3a1c5a52 # v3
         with:
           use-installer: true
       # sam validate --lint no necesita credenciales de AWS
