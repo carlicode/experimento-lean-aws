@@ -99,12 +99,12 @@ Resources:
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/experimento-lean-*:*
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bugdojo-mvp-*
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bugdojo-mvp-*:*
-              # DescribeLogGroups no se puede acotar a un log group: AWS lo evalúa
-              # sobre toda la cuenta (log-group:*). Solo lista nombres, no lee logs.
+              # DescribeLogGroups no admite permisos a nivel de recurso: solo funciona
+              # con "*". Solo lista nombres de log groups, no lee logs.
               - Sid: ListarLogGroups
                 Effect: Allow
                 Action: logs:DescribeLogGroups
-                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+                Resource: "*"
               - Sid: BucketsDeLosSitios
                 Effect: Allow
                 Action: s3:*
