@@ -99,6 +99,12 @@ Resources:
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/experimento-lean-*:*
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bugdojo-mvp-*
                   - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bugdojo-mvp-*:*
+              # DescribeLogGroups no se puede acotar a un log group: AWS lo evalúa
+              # sobre toda la cuenta (log-group:*). Solo lista nombres, no lee logs.
+              - Sid: ListarLogGroups
+                Effect: Allow
+                Action: logs:DescribeLogGroups
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
               - Sid: BucketsDeLosSitios
                 Effect: Allow
                 Action: s3:*
@@ -107,6 +113,18 @@ Resources:
                   - arn:aws:s3:::experimento-lean-*/*
                   - arn:aws:s3:::bugdojo-mvp-*
                   - arn:aws:s3:::bugdojo-mvp-*/*
+              # Con --role-arn, CloudFormation procesa el Transform de SAM con este rol
+              # (no con el de GitHub), así que este rol también necesita el permiso.
+              - Sid: TransformDeSam
+                Effect: Allow
+                Action: cloudformation:CreateChangeSet
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
+              # Lambda descarga el zip del bucket de artefactos con las credenciales de
+              # quien crea la función, es decir, este rol.
+              - Sid: LeerArtefactos
+                Effect: Allow
+                Action: [s3:GetObject, s3:GetObjectVersion]
+                Resource: !Sub ${Artefactos.Arn}/*
               # Los roles de las Lambdas, y solo los de estos dos stacks.
               - Sid: RolesDeLasLambdas
                 Effect: Allow
@@ -117,9 +135,13 @@ Resources:
                   - iam:GetRole
                   - iam:GetRolePolicy
                   - iam:PutRolePolicy
+                  - iam:ListAttachedRolePolicies
+                  - iam:ListRolePolicies
                   - iam:TagRole
                   - iam:UntagRole
                   - iam:UpdateAssumeRolePolicy
+                  - iam:UpdateRole
+                  - iam:UpdateRoleDescription
                 Resource:
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/experimento-lean-*
                   - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/bugdojo-mvp-*
