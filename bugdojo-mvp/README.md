@@ -34,7 +34,7 @@ El diseño es mobile first, con layout de 3 columnas en pantallas grandes (palet
 
 | Métrica | Definición | Meta |
 |---|---|---|
-| **Activación** | % de personas que **arman** al menos 1 programa | **≥ 40 %** |
+| **Activación** | % de personas que completan **Aprende** (las 3 preguntas) en al menos 1 reto | **≥ 40 %** |
 | **Retención** | % de personas que vuelven otro día | **≥ 20 %** |
 
 - Si se cumplen las dos: **PERSEVERA**.
@@ -56,7 +56,7 @@ Navegador ─► CloudFront ─┬─► S3        (landing, retos, editor, mét
 
 - **El código de la persona corre en SU navegador**, en un Web Worker con un corte a los 2 segundos (para bucles infinitos). El servidor nunca ejecuta código ajeno.
 - **Identidad anónima:** un `uid` aleatorio en `localStorage`. El progreso y el código también se guardan solo en el navegador.
-- **Al servidor llegan solo eventos:** `visita` (deduplicada por día, hora de Bolivia), `aprendido`, `armado`, `intento`, `resuelto` y `feedback`, con el lenguaje (`js` o `py`).
+- **Al servidor llegan solo eventos:** `visita` (deduplicada por día, hora de Bolivia), `aprendido`, `armado`, `intento`, `resuelto`, `feedback` e `inscripcion`, con el lenguaje (`js` o `py`).
 - **`/metricas.html`** muestra solo totales: activación, retención, lenguaje elegido, embudo por fase y reto, y feedback.
 
 ### Retos
@@ -86,6 +86,23 @@ Desplegar en AWS (stack separado: `bugdojo-mvp`):
 ```bash
 ./scripts/deploy.sh
 ```
+
+### Early access
+
+Desde que la persona completa su primera fase aparece un aviso amarillo, **"Inscribirme al early access"**. Ahí escribe su nombre y las iniciales de su otro nombre o apellido (`Carla M.`). Si escribe un apellido entero, solo guardamos la inicial. Es una señal de compromiso más fuerte que responder "volvería".
+
+`metricas.html` muestra solo cuántas personas se inscribieron, nunca los nombres. Para verlos:
+
+```bash
+TABLA=$(aws cloudformation describe-stacks --stack-name bugdojo-mvp --region us-east-1 --query "Stacks[0].Outputs[?OutputKey=='TablaNombre'].OutputValue" --output text)
+aws dynamodb scan --table-name "$TABLA" --region us-east-1 --filter-expression "sk = :s" --expression-attribute-values '{":s":{"S":"inscripcion"}}' --query "Items[].nombre.S" --output text
+```
+
+### Reiniciar datos
+
+El botón **Reiniciar datos** de `metricas.html` borra todos los datos del servidor. Como el dashboard es público, pide una clave que el servidor comprueba. La clave es el parámetro `ClaveReinicio` (en GitHub, el secret `CLAVE_REINICIO`, de 8 caracteres como mínimo). Si no hay clave, el botón está desactivado. En el servidor local, la clave es `ensayo-local-bugdojo`.
+
+Reiniciar no borra el progreso guardado en cada navegador. Para volver a probar como una persona nueva, abre `/?reiniciar=1`.
 
 Eliminar todo:
 

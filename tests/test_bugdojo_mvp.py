@@ -88,14 +88,17 @@ def test_hoy_usa_hora_de_bolivia(mvp, monkeypatch):
     assert mvp.hoy() == "2026-10-21"
 
 
-def test_activacion_cuenta_armado_o_resuelto(mvp):
-    solo_aprende, arma, escribe = nuevo_uid(), nuevo_uid(), nuevo_uid()
+def test_activacion_cuenta_cualquier_fase_completada(mvp, monkeypatch):
+    solo_aprende, arma, escribe, solo_visita = nuevo_uid(), nuevo_uid(), nuevo_uid(), nuevo_uid()
     evento(mvp, solo_aprende, "aprendido", reto="1")
     evento(mvp, arma, "armado", reto="1")
     evento(mvp, escribe, "resuelto", reto="2", lang="py")
+    visitar(mvp, monkeypatch, solo_visita, "2026-10-24")
     datos = metricas(mvp)
-    assert datos["usuarios"] == 3
-    assert datos["activados"] == 2
+    assert datos["usuarios"] == 4
+    assert datos["activados"] == 3
+    assert datos["lenguajes"]["js"]["armaron"] == 1
+    assert datos["lenguajes"]["py"]["armaron"] == 1
 
 
 def test_intentos_no_cuentan_como_fase(mvp):
@@ -193,3 +196,84 @@ def test_metricas_recorre_todas_las_paginas(mvp, monkeypatch):
     datos = metricas(mvp)
     assert datos["usuarios"] == 5
     assert datos["activados"] == 1
+
+
+# ---------- early access ----------
+
+@pytest.mark.parametrize("nombre", ["Carla M.", "Carla M. F.", "josé r", "  Carla   M.  ", "Ñusta Q. P. R."])
+def test_inscripcion_valida(mvp, nombre):
+    assert evento(mvp, nuevo_uid(), "inscripcion", nombre=nombre) == (200, {"ok": True})
+    assert metricas(mvp)["inscritos"] == 1
+
+
+@pytest.mark.parametrize("nombre", ["", "Carla", "Carla Marquez", "C M.", "Carla M. F. G. H.",
+                                    "carla@correo.com M.", "Carla 1.", None, 42])
+def test_inscripcion_invalida(mvp, nombre):
+    assert evento(mvp, nuevo_uid(), "inscripcion", nombre=nombre) == (400, {"error": "nombre_invalido"})
+
+
+def test_inscripcion_una_vez_por_usuario(mvp, monkeypatch):
+    uid = nuevo_uid()
+    visitar(mvp, monkeypatch, uid, "2026-10-24")
+    visitar(mvp, monkeypatch, nuevo_uid(), "2026-10-24")
+    evento(mvp, uid, "inscripcion", nombre="Carla M.")
+    evento(mvp, uid, "inscripcion", nombre="Carla M. F.")  # reemplaza la anterior
+    datos = metricas(mvp)
+    assert datos["inscritos"] == 1
+    assert datos["inscripcion"] == 0.5
+
+
+def test_metricas_no_devuelven_nombres(mvp):
+    evento(mvp, nuevo_uid(), "inscripcion", nombre="Carla M.")
+    _, cuerpo = llamar(mvp, "GET /api/metricas")
+    assert "Carla" not in str(cuerpo)
+
+
+def test_metricas_vacias_sin_inscritos(mvp):
+    datos = metricas(mvp)
+    assert datos["inscritos"] == 0
+    assert datos["inscripcion"] == 0
+
+
+# ---------- POST /api/reiniciar ----------
+
+CLAVE = "clave-de-prueba-larga"
+
+
+def reiniciar(app, clave):
+    return llamar(app, "POST /api/reiniciar", {"clave": clave})
+
+
+@pytest.mark.parametrize("configurada", [None, "", "corta", "1234567"])
+def test_reinicio_desactivado_sin_clave_larga(mvp, monkeypatch, configurada):
+    if configurada is None:
+        monkeypatch.delenv("CLAVE_REINICIO", raising=False)
+    else:
+        monkeypatch.setenv("CLAVE_REINICIO", configurada)
+    assert reiniciar(mvp, configurada or "") == (403, {"error": "reinicio_desactivado"})
+
+
+@pytest.mark.parametrize("clave", ["otra-clave-larga-xx", "", None, CLAVE.upper()])
+def test_reinicio_con_clave_incorrecta_no_borra(mvp, monkeypatch, clave):
+    monkeypatch.setenv("CLAVE_REINICIO", CLAVE)
+    visitar(mvp, monkeypatch, nuevo_uid(), "2026-10-24")
+    assert reiniciar(mvp, clave) == (403, {"error": "clave_invalida"})
+    assert metricas(mvp)["usuarios"] == 1
+
+
+def test_reinicio_borra_todo_en_todas_las_paginas(mvp, monkeypatch):
+    monkeypatch.setenv("CLAVE_REINICIO", CLAVE)
+    for _ in range(3):
+        uid = nuevo_uid()
+        visitar(mvp, monkeypatch, uid, "2026-10-24")
+        evento(mvp, uid, "armado", reto="1")
+    evento(mvp, uid, "inscripcion", nombre="Carla M.")
+    monkeypatch.setattr(mvp, "tabla", tabla_con_paginas(mvp.tabla))
+    assert reiniciar(mvp, CLAVE) == (200, {"ok": True, "borrados": 7})
+    datos = metricas(mvp)
+    assert datos["usuarios"] == 0
+    assert datos["inscritos"] == 0
+
+
+def test_reinicio_con_body_invalido(mvp):
+    assert llamar(mvp, "POST /api/reiniciar", crudo="[1]") == (400, {"error": "json_invalido"})
