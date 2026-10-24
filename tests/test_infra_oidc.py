@@ -22,3 +22,12 @@ def test_los_roles_del_stack_oidc_quedan_fuera_de_los_patrones():
         # CloudFormation nombra los recursos <stack>-<IdLogico>-<aleatorio>
         fisico = f"{STACK}-{logico}-AAAA"
         assert not fisico.startswith(PATRONES), fisico
+
+
+def test_el_sub_usa_el_prefijo_parametrizado_en_formato_inmutable():
+    """Los repos nuevos de GitHub envían sub con IDs numéricos (repo:OWNER@ID/REPO@ID).
+    Si el rol vuelve a depender de repo:OWNER/REPO, GitHub no podría asumirlo."""
+    texto = OIDC.read_text()
+    assert "!Sub ${PrefijoSub}:environment:${Environment}" in texto
+    por_defecto = re.search(r"PrefijoSub:\n(?:    .*\n)*?    Default: (\S+)", texto).group(1)
+    assert re.fullmatch(r"repo:[^@/:]+@\d+/[^@/:]+@\d+", por_defecto), por_defecto
